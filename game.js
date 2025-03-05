@@ -23,7 +23,7 @@ let currentRoom = 'startRoom';
 let helpTextVisible = true;
 
 function preload() {
-    // Create all assets programmatically using Phaser Graphics
+    // Remove any existing textures to avoid conflicts
     this.textures.remove('smiley');
     this.textures.remove('mustacheSmiley');
     this.textures.remove('madFace');
@@ -34,6 +34,7 @@ function preload() {
     this.textures.remove('key');
     this.textures.remove('sword');
 
+    // Create all assets programmatically using Phaser Graphics
     createAssets(this);
 }
 
@@ -48,10 +49,9 @@ function createAssets(scene) {
     graphics.fillStyle(0x000000, 1); // Black
     graphics.fillCircle(tileSize / 4, tileSize / 3, 2); // Left eye
     graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 2); // Right eye
+    // Use arc for a smile (simpler than quadratic curve)
     graphics.beginPath();
-    graphics.moveTo(tileSize / 3, 2 * tileSize / 3);
-    graphics.lineTo(2 * tileSize / 3, 2 * tileSize / 3);
-    graphics.quadraticCurveTo(tileSize / 2, tileSize / 2, tileSize / 3, 2 * tileSize / 3);
+    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
     graphics.generateTexture('smiley', tileSize, tileSize);
     graphics.clear();
@@ -62,16 +62,17 @@ function createAssets(scene) {
     graphics.fillStyle(0x000000, 1); // Black
     graphics.fillCircle(tileSize / 4, tileSize / 3, 2); // Left eye
     graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 2); // Right eye
+    // Use arc for a smile
     graphics.beginPath();
-    graphics.moveTo(tileSize / 3, 2 * tileSize / 3);
-    graphics.lineTo(2 * tileSize / 3, 2 * tileSize / 3);
-    graphics.quadraticCurveTo(tileSize / 2, tileSize / 2, tileSize / 3, 2 * tileSize / 3);
+    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
-    // Mustache (simple curved lines)
+    // Mustache (simple curved lines using lineTo and arc)
     graphics.lineStyle(2, 0x000000);
     graphics.beginPath();
     graphics.moveTo(tileSize / 4, 4 * tileSize / 5);
-    graphics.quadraticCurveTo(tileSize / 2, tileSize, 3 * tileSize / 4, 4 * tileSize / 5);
+    graphics.lineTo(tileSize / 2 - 4, 4 * tileSize / 5 + 4);
+    graphics.lineTo(tileSize / 2 + 4, 4 * tileSize / 5 + 4);
+    graphics.lineTo(3 * tileSize / 4, 4 * tileSize / 5);
     graphics.strokePath();
     graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
     graphics.clear();
@@ -82,10 +83,9 @@ function createAssets(scene) {
     graphics.fillStyle(0x000000, 1); // Black
     graphics.fillCircle(tileSize / 4, tileSize / 3, 2); // Left eye
     graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 2); // Right eye
+    // Use arc for a frown
     graphics.beginPath();
-    graphics.moveTo(tileSize / 3, tileSize / 2);
-    graphics.lineTo(2 * tileSize / 3, tileSize / 2);
-    graphics.quadraticCurveTo(tileSize / 2, 2 * tileSize / 3, tileSize / 3, tileSize / 2);
+    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, 0, Math.PI, false);
     graphics.strokePath();
     graphics.generateTexture('madFace', tileSize, tileSize);
     graphics.clear();
