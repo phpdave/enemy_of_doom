@@ -12,17 +12,21 @@ body {
 
 #game-container {
     position: relative;
-    width: 800px;
-    height: 600px;
-    background-color: #2c2c2c;
+    width: 100vw; /* Use full viewport width */
+    height: 100vh; /* Use full viewport height */
+    max-width: 800px; /* Limit max width for better scaling */
+    max-height: 600px; /* Limit max height for better scaling */
+    background-color: #2c2c2c; /* Slightly lighter background for contrast */
     border: 2px solid #4a4a4a;
     border-radius: 10px;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.5);
+    overflow: hidden; /* Ensure canvas stays within container */
 }
 
 #game-canvas {
-    width: 100%;
-    height: 100%;
+    width: 100%; /* Fill container width */
+    height: 100%; /* Fill container height */
+    object-fit: contain; /* Maintain aspect ratio while scaling */
 }
 
 #help-text {
@@ -33,9 +37,10 @@ body {
     color: white;
     padding: 15px;
     border-radius: 5px;
-    font-size: 14px;
+    font-size: 16px; /* Increase font size for readability */
     z-index: 10;
     transition: opacity 0.3s;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3); /* Add subtle shadow for contrast */
 }
 
 #help-text.hidden {
