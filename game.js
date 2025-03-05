@@ -182,6 +182,9 @@ function create() {
         align: 'center'
     }).setOrigin(0.5);
 
+    // Store the start time for the countdown
+    this.scene.startTime = this.time.now;
+
     this.time.delayedCall(5000, () => {
         if (!this.gameStarted) {
             this.startGame();
@@ -201,109 +204,106 @@ function create() {
     }
 }
 
-function startGame() {
-    this.gameStarted = true;
-    if (this.countdownText) {
-        this.countdownText.destroy();
+const MyGame = {
+    startGame: function () {
+        this.gameStarted = true;
+        if (this.countdownText) {
+            this.countdownText.destroy();
+        }
+    },
+    update: function () {
+        if (!this.gameStarted) {
+            const remainingTime = Math.ceil((5000 - (this.time.now - this.scene.startTime)) / 1000);
+            if (this.countdownText && remainingTime > 0) {
+                this.countdownText.setText(`Game starts in ${remainingTime}`);
+            }
+
+            if (this.cursors.left.isDown || this.cursors.right.isDown || 
+                this.cursors.up.isDown || this.cursors.down.isDown ||
+                this.keys.w.isDown || this.keys.s.isDown || 
+                this.keys.a.isDown || this.keys.d.isDown) {
+                this.startGame();
+            }
+            return;
+        }
+
+        player1.setVelocity(0);
+        if (this.cursors.left.isDown) player1.setVelocityX(-200);
+        if (this.cursors.right.isDown) player1.setVelocityX(200);
+        if (this.cursors.up.isDown) player1.setVelocityY(-200);
+        if (this.cursors.down.isDown) player1.setVelocityY(200);
+
+        player2.setVelocity(0);
+        if (this.keys.w.isDown) player2.setVelocityY(-200);
+        if (this.keys.s.isDown) player2.setVelocityY(200);
+        if (this.keys.a.isDown) player2.setVelocityX(-200);
+        if (this.keys.d.isDown) player2.setVelocityX(200);
+
+        enemies.getChildren().forEach(enemy => {
+            this.physics.moveToObject(enemy, player1, 100);
+            if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player1.x, player1.y) < 20) {
+                attackPlayer(enemy, player1);
+            }
+            this.physics.moveToObject(enemy, player2, 100);
+            if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player2.x, player2.y) < 20) {
+                attackPlayer(enemy, player2);
+            }
+        });
+
+        if (Phaser.Input.Keyboard.JustDown(this.keys.h)) {
+            this.helpText.classList.toggle('hidden');
+            helpTextVisible = !helpTextVisible;
+        }
+
+        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) attack.call(this, player1);
+        if (Phaser.Input.Keyboard.JustDown(this.keys.q)) attack.call(this, player2);
+    },
+    changeRoom: function (player, door) {
+        if (!this.gameStarted) return;
+        currentRoom = 'bossRoom';
+        this.scene.restart();
+    },
+    collectKey: function (player, chest) {
+        if (!this.gameStarted) return;
+        keyItem.setVisible(true);
+        chest.destroy();
+    },
+    attack: function (player) {
+        if (!this.gameStarted) return;
+        const scene = this;
+        const sword = scene.physics.add.sprite(player.x, player.y, 'sword').setScale(1);
+        scene.tweens.add({
+            targets: sword,
+            angle: 360,
+            duration: 300,
+            onComplete: () => sword.destroy()
+        });
+
+        enemies.getChildren().forEach(enemy => {
+            if (Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y) < 50) {
+                enemy.health = (enemy.health || 100) - 20;
+                if (enemy.health <= 0) enemy.destroy();
+                
+                const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
+                    fontSize: '16px',
+                    fill: '#FF0000'
+                });
+                scene.tweens.add({
+                    targets: damageText,
+                    y: damageText.y - 30,
+                    alpha: 0,
+                    duration: 1000,
+                    onComplete: () => damageText.destroy()
+                });
+            }
+        });
+    },
+    attackPlayer: function (enemy, player) {
+        if (!this.gameStarted) return;
+        player.health = (player.health || 100) - 10;
+        if (player.health <= 0) player.destroy();
     }
-}
-
-function update() {
-    if (!this.gameStarted) {
-        const remainingTime = Math.ceil((5000 - (this.time.now - this.scene.startTime)) / 1000);
-        if (this.countdownText && remainingTime > 0) {
-            this.countdownText.setText(`Game starts in ${remainingTime}`);
-        }
-
-        if (this.cursors.left.isDown || this.cursors.right.isDown || 
-            this.cursors.up.isDown || this.cursors.down.isDown ||
-            this.keys.w.isDown || this.keys.s.isDown || 
-            this.keys.a.isDown || this.keys.d.isDown) {
-            this.startGame();
-        }
-        return;
-    }
-
-    player1.setVelocity(0);
-    if (this.cursors.left.isDown) player1.setVelocityX(-200);
-    if (this.cursors.right.isDown) player1.setVelocityX(200);
-    if (this.cursors.up.isDown) player1.setVelocityY(-200);
-    if (this.cursors.down.isDown) player1.setVelocityY(200);
-
-    player2.setVelocity(0);
-    if (this.keys.w.isDown) player2.setVelocityY(-200);
-    if (this.keys.s.isDown) player2.setVelocityY(200);
-    if (this.keys.a.isDown) player2.setVelocityX(-200);
-    if (this.keys.d.isDown) player2.setVelocityX(200);
-
-    enemies.getChildren().forEach(enemy => {
-        this.physics.moveToObject(enemy, player1, 100);
-        if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player1.x, player1.y) < 20) {
-            attackPlayer(enemy, player1);
-        }
-        this.physics.moveToObject(enemy, player2, 100);
-        if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player2.x, player2.y) < 20) {
-            attackPlayer(enemy, player2);
-        }
-    });
-
-    if (Phaser.Input.Keyboard.JustDown(this.keys.h)) {
-        this.helpText.classList.toggle('hidden');
-        helpTextVisible = !helpTextVisible;
-    }
-
-    if (Phaser.Input.Keyboard.JustDown(this.keys.space)) attack.call(this, player1);
-    if (Phaser.Input.Keyboard.JustDown(this.keys.q)) attack.call(this, player2);
-}
-
-function changeRoom(player, door) {
-    if (!this.gameStarted) return;
-    currentRoom = 'bossRoom';
-    this.scene.restart();
-}
-
-function collectKey(player, chest) {
-    if (!this.gameStarted) return;
-    keyItem.setVisible(true);
-    chest.destroy();
-}
-
-function attack(player) {
-    if (!this.gameStarted) return;
-    const scene = this;
-    const sword = scene.physics.add.sprite(player.x, player.y, 'sword').setScale(1);
-    scene.tweens.add({
-        targets: sword,
-        angle: 360,
-        duration: 300,
-        onComplete: () => sword.destroy()
-    });
-
-    enemies.getChildren().forEach(enemy => {
-        if (Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y) < 50) {
-            enemy.health = (enemy.health || 100) - 20;
-            if (enemy.health <= 0) enemy.destroy();
-            
-            const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
-                fontSize: '16px',
-                fill: '#FF0000'
-            });
-            scene.tweens.add({
-                targets: damageText,
-                y: damageText.y - 30,
-                alpha: 0,
-                duration: 1000,
-                onComplete: () => damageText.destroy()
-            });
-        }
-    });
-}
-
-function attackPlayer(enemy, player) {
-    if (!this.gameStarted) return;
-    player.health = (player.health || 100) - 10;
-    if (player.health <= 0) player.destroy();
-}
+};
 
 let player1, player2, enemies, doors, chests, miniBoss, boss, keyItem, music;
 let currentRoom = 'startRoom';
@@ -323,7 +323,7 @@ const config = {
     scene: {
         preload: preload,
         create: create,
-        update: update
+        ...MyGame // Spread the methods into the scene object
     },
     parent: 'game-container',
     backgroundColor: '#2c2c2c'
