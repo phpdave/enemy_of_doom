@@ -1,34 +1,37 @@
 body {
-    margin: 0;
     display: flex;
     justify-content: center;
     align-items: center;
     height: 100vh;
-    background-color: #1a1a1a;
+    margin: 0;
+    background-color: #333;
     font-family: Arial, sans-serif;
 }
 
-#gameCanvas {
-    border: 2px solid #333;
-    background-color: #2c2c2c;
+#game-container {
+    position: relative;
+    text-align: center;
 }
 
-.instructions {
+#gameCanvas {
+    border: 2px solid #fff;
+}
+
+#instructions {
     position: absolute;
-    top: 20px;
-    left: 20px;
+    top: 10px;
+    left: 10px;
     background-color: rgba(0, 0, 0, 0.8);
-    color: white;
-    padding: 15px;
+    color: #fff;
+    padding: 10px;
     border-radius: 5px;
     display: block;
 }
 
-.instructions h2 {
-    margin-top: 0;
+#instructions h2 {
+    margin: 0 0 10px 0;
 }
 
-.instructions ul {
-    list-style-type: none;
-    padding: 0;
+.hidden {
+    display: none;
 }

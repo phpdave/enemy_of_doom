@@ -7,24 +7,14 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="instructions" class="instructions">
-        <h2>Keyboard Shortcuts</h2>
-        <p>Player 1 (Smiley Face with Eyes):</p>
-        <ul>
-            <li>W: Move Up</li>
-            <li>A: Move Left</li>
-            <li>S: Move Down</li>
-            <li>D: Move Right</li>
-            <li>Space: Attack</li>
-        </ul>
-        <p>Player 2 (Mustache Smiley Face with Eyes):</p>
-        <ul>
-            <li>Arrow Up: Move Up</li>
-            <li>Arrow Left: Move Left</li>
-            <li>Arrow Down: Move Down</li>
-        </ul>
-        <p>Toggle Instructions: Press 'H'</li>
+    <div id="game-container">
+        <canvas id="gameCanvas" width="500" height="500"></canvas>
+        <div id="instructions">
+            <h2>Instructions</h2>
+            <p>Player 1 (Smiley Face): Use WASD to move, Q to attack.</p>
+            <p>Player 2 (Mustache Smiley Face): Use Arrow Keys to move, P to attack.</p>
+            <p>Press H to hide/show these instructions.</p>
+        </div>
     </div>
     <script src="game.js"></script>
 </body>
