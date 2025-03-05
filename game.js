@@ -9,13 +9,6 @@ const MyGame = {
     create: function () {
         const tileSize = 64;
 
-        // Bind all methods to ensure correct 'this' context
-        this.startGame = this.startGame.bind(this);
-        this.changeRoom = this.changeRoom.bind(this);
-        this.collectKey = this.collectKey.bind(this);
-        this.attack = this.attack.bind(this);
-        this.attackPlayer = this.attackPlayer.bind(this);
-
         this.gameStarted = false;
 
         player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1);
@@ -210,6 +203,14 @@ const MyGame = {
         if (player.health <= 0) player.destroy();
     }
 };
+
+// Bind methods after the object is defined
+MyGame.create = MyGame.create.bind(MyGame);
+MyGame.startGame = MyGame.startGame.bind(MyGame);
+MyGame.changeRoom = MyGame.changeRoom.bind(MyGame);
+MyGame.collectKey = MyGame.collectKey.bind(MyGame);
+MyGame.attack = MyGame.attack.bind(MyGame);
+MyGame.attackPlayer = MyGame.attackPlayer.bind(MyGame);
 
 function createAssets(scene) {
     const tileSize = 64;
