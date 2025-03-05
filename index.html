@@ -5,23 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Enemy of Doom</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.85.0/dist/phaser.min.js"></script>
 </head>
 <body>
     <div id="game-container">
-        <canvas id="gameCanvas" width="800" height="600"></canvas>
-        <div id="instructions">
-            <h2>Keyboard Controls</h2>
+        <canvas id="game-canvas"></canvas>
+        <div id="help-text">
+            <h2>Controls:</h2>
             <p>Player 1 (Smiley Face):</p>
-            <ul>
-                <li>Move: Arrow Keys</li>
-                <li>Attack: Spacebar</li>
-            </ul>
-            <p>Player 2 (Mustache Smiley Face):</p>
-            <ul>
-                <li>Move: WASD</li>
-                <li>Attack: E</li>
-            </ul>
-            <p>Hide Instructions: Press H</p>
+            <p>Move: Arrow Keys, Attack: Spacebar</p>
+            <p>Player 2 (Mustache Smiley):</p>
+            <p>Move: WASD, Attack: Q</p>
+            <p>Hide Help: Press H</p>
         </div>
     </div>
     <script src="game.js"></script>

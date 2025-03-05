@@ -1,299 +1,205 @@
-// game.js
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-const instructions = document.getElementById('instructions');
-
-const tileSize = 50; // Size of each grid square
-const rows = 12; // Adjusted for margin
-const cols = 16; // Adjusted for margin
-canvas.width = cols * tileSize;
-canvas.height = rows * tileSize;
-
-// Dungeon layout for Stage 1 (based on the image)
-const stage1 = [
-    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'],
-    ['W', 'P1', ' ', ' ', 'X', ' ', ' ', 'D', ' ', ' ', 'X', ' ', ' ', ' ', ' ', 'W'],
-    ['W', ' ', ' ', ' ', ' ', ' ', 'X', ' ', 'X', ' ', ' ', ' ', 'MB', ' ', ' ', 'W'],
-    ['W', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'W'],
-    ['W', ' ', ' ', ' ', 'D', ' ', 'X', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', 'W'],
-    ['W', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', 'K', ' ', 'W'],
-    ['W', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', 'W'],
-    ['W', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', 'BR', ' ', ' ', 'W'],
-    ['W', ' ', 'X', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-    ['W', 'P2', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', 'W'],
-    ['W', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W']
-];
-
-// Legend: W = Wall, P1 = Player 1, P2 = Player 2, X = Enemy, D = Door, MB = Mini-Boss, BR = Boss Room, K = Key Chest, ' ' = Floor
-
-const players = [
-    { x: 1, y: 1, speed: 5, color: 'yellow', isAttacking: false, attackCooldown: 0 }, // Player 1 (Smiley)
-    { x: 1, y: 9, speed: 5, color: 'brown', isAttacking: false, attackCooldown: 0 }  // Player 2 (Mustache Smiley)
-];
-
-const enemies = [];
-const miniBoss = { x: 12, y: 2, health: 50, speed: 2 }; // Mini-Boss position
-const boss = { x: 12, y: 7, health: 100, speed: 1 }; // Boss position
-let keyCollected = false;
-let currentRoom = stage1;
-
-function initEnemies() {
-    for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-            if (currentRoom[y][x] === 'X') {
-                enemies.push({ x: x * tileSize, y: y * tileSize, health: 20, speed: 2 });
-            }
+const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    physics: {
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 0 },
+            debug: false
         }
-    }
+    },
+    scene: {
+        preload: preload,
+        create: create,
+        update: update
+    },
+    parent: 'game-container'
+};
+
+const game = new Phaser.Game(config);
+let player1, player2, enemies, doors, chests, miniBoss, boss, keyItem;
+let currentRoom = 'startRoom';
+let helpTextVisible = true;
+
+function preload() {
+    // Load images for players, enemies, doors, chests, etc.
+    this.load.image('smiley', 'https://via.placeholder.com/32/FFFF00/000000?text=😊'); // Player 1
+    this.load.image('mustacheSmiley', 'https://via.placeholder.com/32/FFFF00/000000?text=😊 mustache'); // Player 2
+    this.load.image('madFace', 'https://via.placeholder.com/32/FF0000/000000?text=😡'); // Enemies
+    this.load.image('door', 'https://via.placeholder.com/32/808080/000000?text=🚪'); // Doors
+    this.load.image('chest', 'https://via.placeholder.com/32/FFD700/000000?text=📦'); // Chest
+    this.load.image('miniBoss', 'https://via.placeholder.com/32/FF4500/000000?text=👹'); // Mini Boss
+    this.load.image('boss', 'https://via.placeholder.com/32/FF0000/000000?text=👿'); // Boss
+    this.load.image('key', 'https://via.placeholder.com/32/00FF00/000000?text=🔑'); // Key
+    this.load.image('sword', 'https://via.placeholder.com/32/FFFFFF/000000?text=⚔️'); // Sword animation
 }
 
-initEnemies();
+function create() {
+    // Create the map based on the image (Stage 1 layout)
+    const tileSize = 32;
+    const map = this.make.tilemap({ data: [
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+        [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+    ], tileWidth: tileSize, tileHeight: tileSize });
+    const tileset = map.addTilesetImage('tiles');
+    const layer = map.createLayer(0, tileset, 0, 0);
 
-function drawSmiley(x, y, color, hasMustache = false) {
-    ctx.fillStyle = color;
-    ctx.beginPath();
-    ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'black';
-    ctx.beginPath();
-    ctx.arc(x + tileSize / 3, y + tileSize / 3, 5, 0, Math.PI * 2);
-    ctx.arc(x + 2 * tileSize / 3, y + tileSize / 3, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.arc(x + tileSize / 2, y + 2 * tileSize / 3, 10, 0, Math.PI);
-    ctx.stroke();
-    if (hasMustache) {
-        ctx.strokeStyle = 'black';
-        ctx.beginPath();
-        ctx.moveTo(x + tileSize / 3, y + 2 * tileSize / 3);
-        ctx.lineTo(x + tileSize / 2, y + tileSize / 2);
-        ctx.moveTo(x + 2 * tileSize / 3, y + 2 * tileSize / 2);
-        ctx.lineTo(x + tileSize / 2, y + tileSize / 2);
-        ctx.stroke();
-    }
-}
+    // Create players
+    player1 = this.physics.add.sprite(100, 100, 'smiley').setScale(1);
+    player2 = this.physics.add.sprite(150, 100, 'mustacheSmiley').setScale(1);
 
-function drawMadFace(x, y) {
-    ctx.fillStyle = 'red';
-    ctx.beginPath();
-    ctx.arc(x + tileSize / 2, y + tileSize / 2, tileSize / 3, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.fillStyle = 'black';
-    ctx.beginPath();
-    ctx.arc(x + tileSize / 3, y + tileSize / 3, 5, 0, Math.PI * 2);
-    ctx.arc(x + 2 * tileSize / 3, y + tileSize / 3, 5, 0, Math.PI * 2);
-    ctx.fill();
-    ctx.beginPath();
-    ctx.moveTo(x + tileSize / 3, y + 2 * tileSize / 3);
-    ctx.lineTo(x + 2 * tileSize / 3, y + 2 * tileSize / 3);
-    ctx.stroke();
-}
-
-function drawTile(x, y) {
-    if (currentRoom[y][x] === 'W') {
-        ctx.fillStyle = 'gray';
-        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-    } else if (currentRoom[y][x] === 'D') {
-        ctx.fillStyle = 'brown';
-        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-    } else if (currentRoom[y][x] === 'K') {
-        ctx.fillStyle = 'gold';
-        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-    } else if (currentRoom[y][x] === 'MB') {
-        ctx.fillStyle = 'purple';
-        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-    } else if (currentRoom[y][x] === 'BR') {
-        ctx.fillStyle = 'red';
-        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-    } else {
-        ctx.fillStyle = 'black';
-        ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-    }
-}
-
-function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw dungeon
-    for (let y = 0; y < rows; y++) {
-        for (let x = 0; x < cols; x++) {
-            drawTile(x, y);
-        }
-    }
-
-    // Draw players
-    players.forEach((player, index) => {
-        drawSmiley(player.x, player.y, player.color, index === 1);
+    // Create enemies (Xs on the map)
+    enemies = this.physics.add.group();
+    // Place enemies based on the image (approximate positions for Xs)
+    const enemyPositions = [
+        { x: 200, y: 200 },
+        { x: 300, y: 300 },
+        { x: 400, y: 200 }
+    ];
+    enemyPositions.forEach(pos => {
+        enemies.create(pos.x, pos.y, 'madFace').setScale(1);
     });
 
-    // Draw enemies
-    enemies.forEach(enemy => {
-        drawMadFace(enemy.x, enemy.y);
-    });
+    // Create doors (based on the image, e.g., "tricked door" and "door" symbols)
+    doors = this.physics.add.group();
+    doors.create(600, 300, 'door').setScale(1); // Example door position
 
-    // Draw mini-boss
-    drawMadFace(miniBoss.x * tileSize, miniBoss.y * tileSize);
+    // Create chest with key
+    chests = this.physics.add.group();
+    chests.create(500, 400, 'chest').setScale(1);
+    keyItem = this.physics.add.sprite(500, 400, 'key').setScale(1).setVisible(false);
 
-    // Draw boss
-    drawMadFace(boss.x * tileSize, boss.y * tileSize);
+    // Create mini boss and boss
+    miniBoss = this.physics.add.sprite(700, 200, 'miniBoss').setScale(1);
+    boss = this.physics.add.sprite(750, 250, 'boss').setScale(1);
 
-    // Draw key chest if not collected
-    if (!keyCollected && currentRoom.some(row => row.includes('K'))) {
-        for (let y = 0; y < rows; y++) {
-            for (let x = 0; x < cols; x++) {
-                if (currentRoom[y][x] === 'K') {
-                    ctx.fillStyle = 'gold';
-                    ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-                }
-            }
-        }
-    }
+    // Set up collisions
+    this.physics.add.overlap(player1, doors, changeRoom, null, this);
+    this.physics.add.overlap(player2, doors, changeRoom, null, this);
+    this.physics.add.overlap(player1, chests, collectKey, null, this);
+    this.physics.add.overlap(player2, chests, collectKey, null, this);
+    this.physics.add.overlap([player1, player2], enemies, attackEnemy, null, this);
 
-    requestAnimationFrame(draw);
-}
-
-function movePlayer(player, dx, dy) {
-    const newX = player.x + dx;
-    const newY = player.y + dy;
-    const gridX = Math.floor(newX / tileSize);
-    const gridY = Math.floor(newY / tileSize);
-
-    if (currentRoom[gridY] && currentRoom[gridY][gridX] !== 'W') {
-        if (currentRoom[gridY][gridX] === 'D') {
-            changeRoom(gridX, gridY);
-        } else if (currentRoom[gridY][gridX] === 'K') {
-            keyCollected = true;
-            currentRoom[gridY][gridX] = ' ';
-        }
-        player.x = newX;
-        player.y = newY;
-    }
-}
-
-function changeRoom(x, y) {
-    // Simple room change logic (could expand for multiple rooms)
-    if (y === 1 && x === 7) { // Example: Door at (7,1) leads to Boss Room
-        currentRoom = [
-            ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', 'D', ' ', ' ', ' ', ' ', 'BR', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W'],
-            ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W']
-        ];
-        players[0].x = 1 * tileSize;
-        players[0].y = 1 * tileSize;
-        players[1].x = 1 * tileSize;
-        players[1].y = 9 * tileSize;
-        enemies.length = 0;
-        initEnemies();
-    }
-}
-
-function moveEnemies() {
-    enemies.forEach(enemy => {
-        const dx = (players[0].x + players[1].x) / 2 - enemy.x > 0 ? enemy.speed : -enemy.speed;
-        const dy = (players[0].y + players[1].y) / 2 - enemy.y > 0 ? enemy.speed : -enemy.speed;
-        const newX = enemy.x + dx;
-        const newY = enemy.y + dy;
-        const gridX = Math.floor(newX / tileSize);
-        const gridY = Math.floor(newY / tileSize);
-
-        if (currentRoom[gridY] && currentRoom[gridY][gridX] !== 'W') {
-            enemy.x = newX;
-            enemy.y = newY;
-        }
-    });
-
-    // Move mini-boss towards players
-    const dxMB = (players[0].x + players[1].x) / 2 - miniBoss.x * tileSize > 0 ? miniBoss.speed : -miniBoss.speed;
-    const dyMB = (players[0].y + players[1].y) / 2 - miniBoss.y * tileSize > 0 ? miniBoss.speed : -miniBoss.speed;
-    miniBoss.x += dxMB > 0 ? 1 : -1;
-    miniBoss.y += dyMB > 0 ? 1 : -1;
-
-    // Move boss towards players
-    const dxB = (players[0].x + players[1].x) / 2 - boss.x * tileSize > 0 ? boss.speed : -boss.speed;
-    const dyB = (players[0].y + players[1].y) / 2 - boss.y * tileSize > 0 ? boss.speed : -boss.speed;
-    boss.x += dxB > 0 ? 1 : -1;
-    boss.y += dyB > 0 ? 1 : -1;
-}
-
-function attack(playerIndex) {
-    if (players[playerIndex].attackCooldown > 0) return;
-    players[playerIndex].isAttacking = true;
-    players[playerIndex].attackCooldown = 30; // Cooldown in frames
-
-    // Sword swing animation
-    const swing = () => {
-        ctx.save();
-        ctx.translate(players[playerIndex].x + tileSize / 2, players[playerIndex].y + tileSize / 2);
-        ctx.rotate(Math.PI / 4);
-        ctx.fillStyle = 'silver';
-        ctx.fillRect(-10, -tileSize / 2, 20, tileSize);
-        ctx.restore();
-
-        // Damage text above nearest enemy
-        enemies.forEach((enemy, i) => {
-            const dist = Math.hypot(enemy.x - players[playerIndex].x, enemy.y - players[playerIndex].y);
-            if (dist < tileSize * 2) { // Within attack range
-                enemy.health -= 10;
-                ctx.fillStyle = 'red';
-                ctx.font = '20px Arial';
-                ctx.fillText('-10', enemy.x, enemy.y - 10);
-                if (enemy.health <= 0) enemies.splice(i, 1);
-            }
-        });
-
-        if (Math.hypot(miniBoss.x * tileSize - players[playerIndex].x, miniBoss.y * tileSize - players[playerIndex].y) < tileSize * 2) {
-            miniBoss.health -= 10;
-            ctx.fillStyle = 'red';
-            ctx.font = '20px Arial';
-            ctx.fillText('-10', miniBoss.x * tileSize, miniBoss.y * tileSize - 10);
-            if (miniBoss.health <= 0) miniBoss.health = 0; // Mini-boss defeated
-        }
-
-        if (Math.hypot(boss.x * tileSize - players[playerIndex].x, boss.y * tileSize - players[playerIndex].y) < tileSize * 2) {
-            boss.health -= 10;
-            ctx.fillStyle = 'red';
-            ctx.font = '20px Arial';
-            ctx.fillText('-10', boss.x * tileSize, boss.y * tileSize - 10);
-            if (boss.health <= 0) boss.health = 0; // Boss defeated
-        }
+    // Keyboard controls
+    this.cursors = this.input.keyboard.createCursorKeys();
+    this.keys = {
+        w: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W),
+        a: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A),
+        s: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S),
+        d: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D),
+        space: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE),
+        q: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.Q),
+        h: this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.H)
     };
 
-    swing();
-    setTimeout(() => players[playerIndex].isAttacking = false, 200);
-}
-
-document.addEventListener('keydown', (e) => {
-    switch (e.key) {
-        case 'ArrowUp': movePlayer(players[0], 0, -players[0].speed); break;
-        case 'ArrowDown': movePlayer(players[0], 0, players[0].speed); break;
-        case 'ArrowLeft': movePlayer(players[0], -players[0].speed, 0); break;
-        case 'ArrowRight': movePlayer(players[0], players[0].speed, 0); break;
-        case 'w': movePlayer(players[1], 0, -players[1].speed); break;
-        case 's': movePlayer(players[1], 0, players[1].speed); break;
-        case 'a': movePlayer(players[1], -players[1].speed, 0); break;
-        case 'd': movePlayer(players[1], players[1].speed, 0); break;
-        case ' ': attack(0); break; // Player 1 attack
-        case 'e': attack(1); break; // Player 2 attack
-        case 'h': instructions.classList.toggle('hidden'); break; // Hide/show instructions
+    // Help text
+    this.helpText = document.getElementById('help-text');
+    if (this.keys.h.isDown) {
+        this.helpText.classList.toggle('hidden');
+        helpTextVisible = !helpTextVisible;
     }
-});
-
-function gameLoop() {
-    moveEnemies();
-    if (players[0].attackCooldown > 0) players[0].attackCooldown--;
-    if (players[1].attackCooldown > 0) players[1].attackCooldown--;
-    draw();
-    requestAnimationFrame(gameLoop);
 }
 
-gameLoop();
+function update() {
+    // Player 1 movement (Arrow Keys)
+    player1.setVelocity(0);
+    if (this.cursors.left.isDown) player1.setVelocityX(-200);
+    if (this.cursors.right.isDown) player1.setVelocityX(200);
+    if (this.cursors.up.isDown) player1.setVelocityY(-200);
+    if (this.cursors.down.isDown) player1.setVelocityY(200);
+
+    // Player 2 movement (WASD)
+    player2.setVelocity(0);
+    if (this.keys.w.isDown) player2.setVelocityY(-200);
+    if (this.keys.s.isDown) player2.setVelocityY(200);
+    if (this.keys.a.isDown) player2.setVelocityX(-200);
+    if (this.keys.d.isDown) player2.setVelocityX(200);
+
+    // Enemy movement (simple AI, move towards players)
+    enemies.getChildren().forEach(enemy => {
+        this.physics.moveToObject(enemy, player1, 100);
+        if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player1.x, player1.y) < 50) {
+            attackPlayer(enemy, player1);
+        }
+        this.physics.moveToObject(enemy, player2, 100);
+        if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player2.x, player2.y) < 50) {
+            attackPlayer(enemy, player2);
+        }
+    });
+
+    // Hide help text with H key
+    if (Phaser.Input.Keyboard.JustDown(this.keys.h)) {
+        this.helpText.classList.toggle('hidden');
+        helpTextVisible = !helpTextVisible;
+    }
+
+    // Attack with Spacebar (Player 1) or Q (Player 2)
+    if (Phaser.Input.Keyboard.JustDown(this.keys.space)) attack(player1);
+    if (Phaser.Input.Keyboard.JustDown(this.keys.q)) attack(player2);
+}
+
+function changeRoom(player, door) {
+    // Transition to a new room (simplified for now)
+    currentRoom = 'bossRoom'; // Example room change
+    this.scene.restart(); // Restart scene with new room layout
+}
+
+function collectKey(player, chest) {
+    keyItem.setVisible(true);
+    chest.destroy();
+}
+
+function attack(player) {
+    // Create sword swing animation
+    const sword = this.physics.add.sprite(player.x, player.y, 'sword').setScale(1);
+    this.tweens.add({
+        targets: sword,
+        angle: 360,
+        duration: 300,
+        onComplete: () => sword.destroy()
+    });
+
+    // Check for nearby enemies and deal damage
+    enemies.getChildren().forEach(enemy => {
+        if (Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y) < 50) {
+            enemy.health = (enemy.health || 100) - 20; // Simple damage
+            if (enemy.health <= 0) enemy.destroy();
+            
+            // Show damage text
+            const damageText = this.add.text(enemy.x, enemy.y - 20, '-20', {
+                fontSize: '16px',
+                fill: '#FF0000'
+            });
+            this.tweens.add({
+                targets: damageText,
+                y: damageText.y - 30,
+                alpha: 0,
+                duration: 1000,
+                onComplete: () => damageText.destroy()
+            });
+        }
+    });
+}
+
+function attackPlayer(enemy, player) {
+    // Simple enemy attack (reduce player health, not fully implemented for brevity)
+    player.health = (player.health || 100) - 10;
+    if (player.health <= 0) player.destroy();
+}
