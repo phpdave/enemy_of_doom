@@ -84,17 +84,32 @@ const MyGame = {
             }
         }, [], this);
 
+        // Initialize music but don’t play until user interaction
         try {
             music = this.sound.add('backgroundMusic');
-            music.play({ loop: true, volume: 0.5 });
+            // Don’t play automatically—wait for user gesture
         } catch (error) {
-            console.error('Failed to load or play background music:', error);
+            console.error('Failed to load background music:', error);
             this.add.text(400, 550, 'Background music failed to load.', {
                 fontSize: '16px',
                 fill: '#ffffff',
                 align: 'center'
             }).setOrigin(0.5);
         }
+
+        // Add a click/touch handler to start the music after user interaction
+        this.input.once('pointerdown', () => {
+            if (music && !music.isPlaying) {
+                music.play({ loop: true, volume: 0.5 });
+            }
+        }, this);
+
+        // Add a keypress handler as an alternative user gesture
+        this.input.keyboard.once('keydown', () => {
+            if (music && !music.isPlaying) {
+                music.play({ loop: true, volume: 0.5 });
+            }
+        }, this);
     },
 
     // Update method
@@ -106,13 +121,12 @@ const MyGame = {
                 this.countdownText.setText(`Game starts in ${remainingTime.toFixed(1)}`);
             }
 
-            // Use a bound reference to startGame to ensure context
-            const startGameBound = this.startGame.bind(this);
+            // Use direct call to startGame to ensure context (remove bind, as it’s not needed now)
             if (this.cursors.left.isDown || this.cursors.right.isDown || 
                 this.cursors.up.isDown || this.cursors.down.isDown ||
                 this.keys.w.isDown || this.keys.s.isDown || 
                 this.keys.a.isDown || this.keys.d.isDown) {
-                startGameBound();
+                this.startGame();
             }
             return;
         }
