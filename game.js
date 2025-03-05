@@ -121,12 +121,12 @@ const MyGame = {
                 this.countdownText.setText(`Game starts in ${remainingTime.toFixed(1)}`);
             }
 
-            // Use direct call to startGame to ensure context (remove bind, as it’s not needed now)
+            // Ensure startGame is called with the correct context using an arrow function
             if (this.cursors.left.isDown || this.cursors.right.isDown || 
                 this.cursors.up.isDown || this.cursors.down.isDown ||
                 this.keys.w.isDown || this.keys.s.isDown || 
                 this.keys.a.isDown || this.keys.d.isDown) {
-                this.startGame();
+                this.startGame(); // Use direct call, as 'this' should now be bound correctly
             }
             return;
         }
@@ -164,6 +164,15 @@ const MyGame = {
     },
 
     // Other scene methods
+    startGame: function () {
+        this.gameStarted = true;
+        if (this.countdownText) {
+            this.countdownText.destroy();
+        }
+        if (this.countdownBg) { // Destroy the background rectangle too
+            this.countdownBg.destroy();
+        }
+    },
     changeRoom: function (player, door) {
         if (!this.gameStarted) return;
         currentRoom = 'bossRoom';
