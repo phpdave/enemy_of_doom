@@ -69,7 +69,8 @@ const MyGame = {
 
         this.scene.startTime = this.time.now;
 
-        this.time.delayedCall(5000, this.startGame, [], this);
+        // Use an arrow function to preserve 'this' as the scene context
+        this.time.delayedCall(5000, () => this.startGame(), [], this);
 
         try {
             music = this.sound.add('backgroundMusic');
@@ -203,14 +204,6 @@ const MyGame = {
         if (player.health <= 0) player.destroy();
     }
 };
-
-// Bind methods after the object is defined
-MyGame.create = MyGame.create.bind(MyGame);
-MyGame.startGame = MyGame.startGame.bind(MyGame);
-MyGame.changeRoom = MyGame.changeRoom.bind(MyGame);
-MyGame.collectKey = MyGame.collectKey.bind(MyGame);
-MyGame.attack = MyGame.attack.bind(MyGame);
-MyGame.attackPlayer = MyGame.attackPlayer.bind(MyGame);
 
 function createAssets(scene) {
     const tileSize = 64;
