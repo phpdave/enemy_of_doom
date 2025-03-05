@@ -33,6 +33,7 @@ function preload() {
     this.textures.remove('boss');
     this.textures.remove('key');
     this.textures.remove('sword');
+    this.textures.remove('tiles'); // Remove tiles texture if not used
 
     // Create all assets programmatically using Phaser Graphics
     createAssets(this);
@@ -49,7 +50,7 @@ function createAssets(scene) {
     graphics.fillStyle(0x000000, 1); // Black
     graphics.fillCircle(tileSize / 4, tileSize / 3, 2); // Left eye
     graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 2); // Right eye
-    // Use arc for a smile (simpler than quadratic curve)
+    // Use arc for a smile
     graphics.beginPath();
     graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
@@ -66,7 +67,7 @@ function createAssets(scene) {
     graphics.beginPath();
     graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
-    // Mustache (simple curved lines using lineTo and arc)
+    // Mustache (simple curved lines using lineTo)
     graphics.lineStyle(2, 0x000000);
     graphics.beginPath();
     graphics.moveTo(tileSize / 4, 4 * tileSize / 5);
@@ -155,10 +156,16 @@ function createAssets(scene) {
     graphics.fillRect(tileSize / 2 - 2, tileSize / 2 + 4, 4, tileSize / 4); // Handle
     graphics.generateTexture('sword', tileSize, tileSize);
     graphics.clear();
+
+    // Optional: Create a simple tileset texture if needed (e.g., black square for tiles)
+    graphics.fillStyle(0x000000, 1); // Black
+    graphics.fillRect(0, 0, tileSize, tileSize);
+    graphics.generateTexture('tiles', tileSize, tileSize);
+    graphics.clear();
 }
 
 function create() {
-    // Create the map based on the image (Stage 1 layout)
+    // Create the map (remove tileset if not needed, or use the generated 'tiles' texture)
     const tileSize = 32;
     const map = this.make.tilemap({ data: [
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
@@ -180,8 +187,9 @@ function create() {
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
         [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
     ], tileWidth: tileSize, tileHeight: tileSize });
-    const tileset = map.addTilesetImage('tiles');
-    const layer = map.createLayer(0, tileset, 0, 0);
+    // Remove or comment out the tileset if not needed
+    // const tileset = map.addTilesetImage('tiles');
+    // const layer = map.createLayer(0, tileset, 0, 0);
 
     // Create players
     player1 = this.physics.add.sprite(100, 100, 'smiley').setScale(1);
@@ -189,7 +197,6 @@ function create() {
 
     // Create enemies (Xs on the map)
     enemies = this.physics.add.group();
-    // Place enemies based on the image (approximate positions for Xs)
     const enemyPositions = [
         { x: 200, y: 200 },
         { x: 300, y: 300 },
@@ -270,8 +277,8 @@ function update() {
     }
 
     // Attack with Spacebar (Player 1) or Q (Player 2)
-    if (Phaser.Input.Keyboard.JustDown(this.keys.space)) attack(player1);
-    if (Phaser.Input.Keyboard.JustDown(this.keys.q)) attack(player2);
+    if (Phaser.Input.Keyboard.JustDown(this.keys.space)) attack.call(this, player1); // Use .call to bind the scene context
+    if (Phaser.Input.Keyboard.JustDown(this.keys.q)) attack.call(this, player2); // Use .call to bind the scene context
 }
 
 function changeRoom(player, door) {
@@ -286,9 +293,11 @@ function collectKey(player, chest) {
 }
 
 function attack(player) {
+    // Ensure 'this' refers to the Phaser scene
+    const scene = this; // Capture the scene context
     // Create sword swing animation
-    const sword = this.physics.add.sprite(player.x, player.y, 'sword').setScale(1);
-    this.tweens.add({
+    const sword = scene.physics.add.sprite(player.x, player.y, 'sword').setScale(1);
+    scene.tweens.add({
         targets: sword,
         angle: 360,
         duration: 300,
@@ -302,11 +311,11 @@ function attack(player) {
             if (enemy.health <= 0) enemy.destroy();
             
             // Show damage text
-            const damageText = this.add.text(enemy.x, enemy.y - 20, '-20', {
+            const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
                 fontSize: '16px',
                 fill: '#FF0000'
             });
-            this.tweens.add({
+            scene.tweens.add({
                 targets: damageText,
                 y: damageText.y - 30,
                 alpha: 0,
@@ -319,8 +328,8 @@ function attack(player) {
 
 function attackEnemy(player, enemy) {
     // This function is called when a player overlaps with an enemy
-    // We can trigger the attack here or handle it in the update/attack function
-    attack(player); // Call the attack function to handle damage and animation
+    // Trigger the attack with the correct scene context
+    attack.call(this, player); // Use .call to bind the scene context
 }
 
 function attackPlayer(enemy, player) {
