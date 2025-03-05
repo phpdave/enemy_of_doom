@@ -176,11 +176,20 @@ function create() {
 
     this.helpText = document.getElementById('help-text');
 
-    this.countdownText = this.add.text(400, 300, 'Game starts in 5', {
+    // Create a cool background rectangle for the countdown text
+    const countdownBg = this.add.rectangle(400, 30, 800, 60, 0xff0000, 0.7); // Red semi-transparent background
+    countdownBg.setOrigin(0.5, 0.5);
+    countdownBg.setDepth(100); // Ensure it’s above other elements
+
+    // Add countdown text at the top with a cool style
+    this.countdownText = this.add.text(400, 30, 'Game starts in 5', {
         fontSize: '32px',
-        fill: '#ffffff',
+        fill: '#ffffff', // White text
+        fontFamily: 'Arial Black', // Bold, striking font
+        stroke: '#ff4500', // Orange outline for a fiery look
+        strokeThickness: 4,
         align: 'center'
-    }).setOrigin(0.5);
+    }).setOrigin(0.5, 0.5).setDepth(101); // Above the background
 
     // Store the start time for the countdown
     this.scene.startTime = this.time.now;
@@ -210,12 +219,16 @@ const MyGame = {
         if (this.countdownText) {
             this.countdownText.destroy();
         }
+        if (this.countdownBg) { // Destroy the background rectangle too
+            this.countdownBg.destroy();
+        }
     },
     update: function () {
         if (!this.gameStarted) {
-            const remainingTime = Math.ceil((5000 - (this.time.now - this.scene.startTime)) / 1000);
+            const elapsedTime = this.time.now - this.scene.startTime;
+            const remainingTime = Math.max(0, 5 - (elapsedTime / 1000)); // Count down from 5 seconds
             if (this.countdownText && remainingTime > 0) {
-                this.countdownText.setText(`Game starts in ${remainingTime}`);
+                this.countdownText.setText(`Game starts in ${remainingTime.toFixed(1)}`);
             }
 
             if (this.cursors.left.isDown || this.cursors.right.isDown || 
