@@ -1,12 +1,14 @@
-// game.js
+class MyGame extends Phaser.Scene {
+    constructor() {
+        super('MyGame');
+    }
 
-const MyGame = {
-    preload: function () {
+    preload() {
         createAssets(this);
         this.load.audio('backgroundMusic', 'assets/backgroundMusic.mp3');
-    },
+    }
 
-    create: function () {
+    create() {
         const tileSize = 64;
 
         this.gameStarted = false;
@@ -69,8 +71,7 @@ const MyGame = {
 
         this.scene.startTime = this.time.now;
 
-        // Use an arrow function to preserve 'this' as the scene context
-        this.time.delayedCall(5000, () => this.startGame(), [], this);
+        this.time.delayedCall(5000, this.startGame, [], this);
 
         try {
             music = this.sound.add('backgroundMusic');
@@ -94,9 +95,9 @@ const MyGame = {
                 music.play({ loop: true, volume: 0.5 });
             }
         }, this);
-    },
+    }
 
-    update: function () {
+    update() {
         if (!this.gameStarted) {
             const elapsedTime = this.time.now - this.scene.startTime;
             const remainingTime = Math.max(0, 5 - (elapsedTime / 1000));
@@ -143,9 +144,9 @@ const MyGame = {
 
         if (Phaser.Input.Keyboard.JustDown(this.keys.space)) this.attack(player1);
         if (Phaser.Input.Keyboard.JustDown(this.keys.q)) this.attack(player2);
-    },
+    }
 
-    startGame: function () {
+    startGame() {
         this.gameStarted = true;
         if (this.countdownText) {
             this.countdownText.destroy();
@@ -153,21 +154,21 @@ const MyGame = {
         if (this.countdownBg) {
             this.countdownBg.destroy();
         }
-    },
+    }
 
-    changeRoom: function (player, door) {
+    changeRoom(player, door) {
         if (!this.gameStarted) return;
         currentRoom = 'bossRoom';
         this.scene.restart();
-    },
+    }
 
-    collectKey: function (player, chest) {
+    collectKey(player, chest) {
         if (!this.gameStarted) return;
         keyItem.setVisible(true);
         chest.destroy();
-    },
+    }
 
-    attack: function (player) {
+    attack(player) {
         if (!this.gameStarted) return;
         const scene = this;
         const sword = scene.physics.add.sprite(player.x, player.y, 'sword').setScale(1);
@@ -196,138 +197,14 @@ const MyGame = {
                 });
             }
         });
-    },
+    }
 
-    attackPlayer: function (enemy, player) {
+    attackPlayer(enemy, player) {
         if (!this.gameStarted) return;
         player.health = (player.health || 100) - 10;
         if (player.health <= 0) player.destroy();
     }
-};
-
-function createAssets(scene) {
-    const tileSize = 64;
-    const graphics = scene.add.graphics();
-
-    // Smiley (Player 1)
-    graphics.clear();
-    graphics.fillStyle(0xffff00, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.generateTexture('smiley', tileSize, tileSize);
-
-    // Mustache Smiley (Player 2)
-    graphics.clear();
-    graphics.fillStyle(0xffff00, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 4, 4 * tileSize / 5);
-    graphics.lineTo(tileSize / 2 - 16, 4 * tileSize / 5 + 16);
-    graphics.lineTo(tileSize / 2 + 16, 4 * tileSize / 5 + 16);
-    graphics.lineTo(3 * tileSize / 4, 4 * tileSize / 5);
-    graphics.strokePath();
-    graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
-
-    // Mad Face (Enemy)
-    graphics.clear();
-    graphics.fillStyle(0xff0000, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, 0, Math.PI, false);
-    graphics.strokePath();
-    graphics.generateTexture('madFace', tileSize, tileSize);
-
-    // Door
-    graphics.clear();
-    graphics.fillStyle(0x808080, 1);
-    graphics.fillRect(8, 8, tileSize - 16, tileSize - 16);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 2, 12);
-    graphics.generateTexture('door', tileSize, tileSize);
-
-    // Chest
-    graphics.clear();
-    graphics.fillStyle(0xffd700, 1);
-    graphics.fillRect(8, 8, tileSize - 16, tileSize - 16);
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(8, tileSize / 2);
-    graphics.lineTo(tileSize / 2, tileSize / 4);
-    graphics.lineTo(tileSize - 8, tileSize / 2);
-    graphics.strokePath();
-    graphics.generateTexture('chest', tileSize, tileSize);
-
-    // Mini Boss
-    graphics.clear();
-    graphics.fillStyle(0xff4500, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 3, tileSize / 4);
-    graphics.lineTo(tileSize / 4, tileSize / 6);
-    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
-    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
-    graphics.strokePath();
-    graphics.generateTexture('miniBoss', tileSize, tileSize);
-
-    // Boss
-    graphics.clear();
-    graphics.fillStyle(0x8b0000, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.lineStyle(8, 0xffff00);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 3, tileSize / 4);
-    graphics.lineTo(tileSize / 4, tileSize / 6);
-    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
-    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
-    graphics.moveTo(tileSize / 2, 8);
-    graphics.lineTo(tileSize / 2 - 16, 32);
-    graphics.moveTo(tileSize / 2, 8);
-    graphics.lineTo(tileSize / 2 + 16, 32);
-    graphics.strokePath();
-    graphics.generateTexture('boss', tileSize, tileSize);
-
-    // Key
-    graphics.clear();
-    graphics.fillStyle(0x00ff00, 1);
-    graphics.fillRect(tileSize / 4, tileSize / 4, tileSize / 2, 8);
-    graphics.fillCircle(tileSize / 2, tileSize / 4, 16);
-    graphics.generateTexture('key', tileSize, tileSize);
-
-    // Sword
-    graphics.clear();
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillRect(tileSize / 2 - 8, 8, 16, tileSize / 2);
-    graphics.fillRect(tileSize / 2 - 24, tileSize / 2, 48, 16);
-    graphics.fillRect(tileSize / 2 - 8, tileSize / 2 + 16, 16, tileSize / 4);
-    graphics.generateTexture('sword', tileSize, tileSize);
-
-    // Tiles
-    graphics.clear();
-    graphics.fillStyle(0x666666, 1);
-    graphics.fillRect(0, 0, tileSize, tileSize);
-    graphics.generateTexture('tiles', tileSize, tileSize);
-    graphics.clear();
 }
-
-let player1, player2, enemies, doors, chests, miniBoss, boss, keyItem, music;
-let currentRoom = 'startRoom';
-let helpTextVisible = true;
 
 const config = {
     type: Phaser.AUTO,
