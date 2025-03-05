@@ -3,15 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enemy of Doom - Stage 1</title>
+    <title>Enemy of Doom</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <canvas id="gameCanvas" width="800" height="600"></canvas>
-    <div id="ui">
-        <p>Health: <span id="playerHealth">100</span></p>
-        <p>Enemies Defeated: <span id="enemiesDefeated">0</span></p>
-        <p>Key Collected: <span id="keyStatus">No</span></p>
+    <div id="instructions" class="instructions">
+        <h2>Keyboard Shortcuts</h2>
+        <p>Player 1 (Smiley Face with Eyes):</p>
+        <ul>
+            <li>W: Move Up</li>
+            <li>A: Move Left</li>
+            <li>S: Move Down</li>
+            <li>D: Move Right</li>
+            <li>Space: Attack</li>
+        </ul>
+        <p>Player 2 (Mustache Smiley Face with Eyes):</p>
+        <ul>
+            <li>Arrow Up: Move Up</li>
+            <li>Arrow Left: Move Left</li>
+            <li>Arrow Down: Move Down</li>
+        </ul>
+        <p>Toggle Instructions: Press 'H'</li>
     </div>
     <script src="game.js"></script>
 </body>

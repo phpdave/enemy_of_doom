@@ -1,167 +1,145 @@
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
-const uiHealth = document.getElementById('playerHealth');
-const uiEnemiesDefeated = document.getElementById('enemiesDefeated');
-const uiKeyStatus = document.getElementById('keyStatus');
+const instructions = document.getElementById('instructions');
 
-const tileSize = 40; // 20x15 grid fits in 800x600 canvas
-const gridWidth = 20;
-const gridHeight = 15;
+const tileSize = 50;
+const mapWidth = 16; // Based on the graph paper grid
+const mapHeight = 12;
 
-// Updated dungeon layout to match 20x15 grid, based on the graph paper (scaled up)
-const dungeonLayout = [
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // Wall
-    [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1], // Path
-    [1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1], // Wall/Path
-    [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1],
-    [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1],
-    [1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1],
-    [1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] // Wall
+// Stage 1 layout from the image (interpreted from the graph paper)
+const stage1 = [
+    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W'],
+    ['W', 'P1', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'D', 'W', 'W', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', 'X', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', ' ', 'X', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'C', 'W', ' ', 'W', 'W'],
+    ['W', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', 'P2', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', ' ', 'W', ' ', 'W', 'W'],
+    ['W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W', 'W']
 ];
 
-// Game objects
-const player = {
-    x: 1, // Starting position (grid coordinates)
-    y: 1,
-    health: 100,
-    speed: 4,
-    color: 'blue'
+// Symbols for the game
+const symbols = {
+    'W': '🧱', // Wall
+    'P1': '😊👀', // Player 1: Smiley face with eyes
+    'P2': '😊👨‍🦰👀', // Player 2: Smiley face with mustache and eyes
+    'X': '😡👀', // Enemy: Mad face with eyes
+    'D': '🚪', // Door
+    'C': '📦', // Chest
+    'K': '🔑' // Key
 };
 
-const enemies = [
-    { x: 6, y: 6, health: 50, isBoss: false, color: 'red' }, // Mini Boss
-    { x: 18, y: 8, health: 100, isBoss: true, color: 'darkred' } // Stage One Boss
-];
+let player1 = { x: 1, y: 1, hasKey: false };
+let player2 = { x: 1, y: 10, hasKey: false };
+let enemies = [];
+let currentStage = stage1;
+let chestOpened = false;
 
-const chest = { x: 10, y: 7, hasKey: true, collected: false, color: 'yellow' };
+function initializeEnemies() {
+    enemies = [];
+    for (let y = 0; y < mapHeight; y++) {
+        for (let x = 0; x < mapWidth; x++) {
+            if (currentStage[y][x] === 'X') {
+                enemies.push({ x, y });
+            }
+        }
+    }
+}
 
-let keysCollected = 0;
-let enemiesDefeated = 0;
-let gameOver = false;
+initializeEnemies();
 
 function draw() {
     ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw dungeon
-    for (let y = 0; y < gridHeight; y++) {
-        for (let x = 0; x < gridWidth; x++) {
-            if (dungeonLayout[y] && dungeonLayout[y][x] === 1) { // Check if row exists
-                ctx.fillStyle = '#666';
-                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-            } else if (dungeonLayout[y]) { // Ensure row exists
-                ctx.fillStyle = '#444';
-                ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-            }
+    for (let y = 0; y < mapHeight; y++) {
+        for (let x = 0; x < mapWidth; x++) {
+            const tile = currentStage[y][x];
+            ctx.fillStyle = 'black';
+            ctx.font = '30px Arial';
+            ctx.fillText(symbols[tile] || ' ', x * tileSize, y * tileSize + 30);
         }
     }
-
-    // Draw player
-    if (player.x >= 0 && player.x < gridWidth && player.y >= 0 && player.y < gridHeight) {
-        ctx.fillStyle = player.color;
-        ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
-    }
-
+    // Draw players
+    ctx.fillText(symbols['P1'], player1.x * tileSize, player1.y * tileSize + 30);
+    ctx.fillText(symbols['P2'], player2.x * tileSize, player2.y * tileSize + 30);
     // Draw enemies
     enemies.forEach(enemy => {
-        if (enemy.health > 0 && enemy.x >= 0 && enemy.x < gridWidth && enemy.y >= 0 && enemy.y < gridHeight) {
-            ctx.fillStyle = enemy.color;
-            ctx.fillRect(enemy.x * tileSize, enemy.y * tileSize, tileSize, tileSize);
+        ctx.fillText(symbols['X'], enemy.x * tileSize, enemy.y * tileSize + 30);
+    });
+}
+
+function moveEnemies() {
+    enemies.forEach(enemy => {
+        const dx = Math.sign(player1.x - enemy.x + (player2.x - enemy.x)) || (Math.random() - 0.5);
+        const dy = Math.sign(player1.y - enemy.y + (player2.y - enemy.y)) || (Math.random() - 0.5);
+        const newX = enemy.x + dx;
+        const newY = enemy.y + dy;
+        if (isValidMove(newX, newY)) {
+            enemy.x = newX;
+            enemy.y = newY;
         }
     });
-
-    // Draw chest
-    if (!chest.collected && chest.x >= 0 && chest.x < gridWidth && chest.y >= 0 && chest.y < gridHeight) {
-        ctx.fillStyle = chest.color;
-        ctx.fillRect(chest.x * tileSize, chest.y * tileSize, tileSize, tileSize);
-    }
-
-    // Update UI
-    uiHealth.textContent = player.health;
-    uiEnemiesDefeated.textContent = enemiesDefeated;
-    uiKeyStatus.textContent = chest.collected ? 'Yes' : 'No';
 }
 
-function movePlayer(dx, dy) {
+function isValidMove(x, y) {
+    return x >= 0 && x < mapWidth && y >= 0 && y < mapHeight && currentStage[y][x] !== 'W';
+}
+
+function movePlayer(player, dx, dy) {
     const newX = player.x + dx;
     const newY = player.y + dy;
-
-    // Check boundaries and walls
-    if (newX >= 0 && newX < gridWidth && newY >= 0 && newY < gridHeight) {
-        if (dungeonLayout[newY] && dungeonLayout[newY][newX] === 0) { // Ensure row exists and is a path
+    if (isValidMove(newX, newY)) {
+        if (currentStage[newY][newX] === 'D') {
+            // Transition to next room (simplified for Stage 1)
+            currentStage = stage1; // Placeholder for now; you can expand to multiple stages
+            player.x = 1; // Reset position to start of new room
+            player.y = 1;
+        } else if (currentStage[newY][newX] === 'C' && !chestOpened) {
+            player.hasKey = true;
+            chestOpened = true;
+            currentStage[newY][newX] = 'K';
+        } else if (currentStage[newY][newX] !== 'K') {
             player.x = newX;
             player.y = newY;
-
-            // Check for collisions with enemies
-            enemies.forEach(enemy => {
-                if (enemy.health > 0 && player.x === enemy.x && player.y === enemy.y) {
-                    attackEnemy(enemy);
-                }
-            });
-
-            // Check for chest
-            if (player.x === chest.x && player.y === chest.y && !chest.collected) {
-                chest.collected = true;
-                keysCollected++;
-                console.log('Key collected!');
-            }
         }
     }
-    draw();
+    checkCollisions();
 }
 
-function attackEnemy(enemy) {
-    if (enemy.health > 0) {
-        enemy.health -= 10; // Player deals 10 damage
-        if (enemy.health <= 0) {
-            enemiesDefeated++;
-            if (enemy.isBoss) {
-                console.log('Boss defeated! Stage cleared!');
-                gameOver = true;
-            }
+function checkCollisions() {
+    enemies.forEach((enemy, index) => {
+        if ((enemy.x === player1.x && enemy.y === player1.y) || (enemy.x === player2.x && enemy.y === player2.y)) {
+            // Simplified combat: remove enemy on collision (Diablo 2-like)
+            enemies.splice(index, 1);
         }
-    }
-}
-
-function gameLoop() {
-    if (!gameOver) {
-        draw();
-        requestAnimationFrame(gameLoop);
-    }
+    });
 }
 
 document.addEventListener('keydown', (e) => {
-    if (gameOver) return;
-
     switch (e.key) {
-        case 'ArrowUp':
-            movePlayer(0, -1);
+        case 'w': movePlayer(player1, 0, -1); break;
+        case 'a': movePlayer(player1, -1, 0); break;
+        case 's': movePlayer(player1, 0, 1); break;
+        case 'd': movePlayer(player1, 1, 0); break;
+        case ' ': // Player 1 attack (simplified)
+            enemies = enemies.filter(enemy => !(Math.abs(enemy.x - player1.x) <= 1 && Math.abs(enemy.y - player1.y) <= 1));
             break;
-        case 'ArrowDown':
-            movePlayer(0, 1);
-            break;
-        case 'ArrowLeft':
-            movePlayer(-1, 0);
-            break;
-        case 'ArrowRight':
-            movePlayer(1, 0);
-            break;
-        case ' ':
-            // Attack (check for nearby enemies)
-            enemies.forEach(enemy => {
-                if (Math.abs(player.x - enemy.x) <= 1 && Math.abs(player.y - enemy.y) <= 1 && enemy.health > 0) {
-                    attackEnemy(enemy);
-                }
-            });
-            break;
+        case 'ArrowUp': movePlayer(player2, 0, -1); break;
+        case 'ArrowLeft': movePlayer(player2, -1, 0); break;
+        case 'ArrowDown': movePlayer(player2, 0, 1); break;
+        case 'ArrowRight': movePlayer(player2, 1, 0); break;
+        case 'h': instructions.style.display = instructions.style.display === 'none' ? 'block' : 'none'; break;
     }
+    draw();
 });
+
+function gameLoop() {
+    moveEnemies();
+    draw();
+    requestAnimationFrame(gameLoop);
+}
 
 gameLoop();
