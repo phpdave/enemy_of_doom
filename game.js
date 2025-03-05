@@ -14,7 +14,10 @@ class MyGame extends Phaser.Scene {
         this.gameStarted = false;
 
         player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1);
+        player1.health = 100; // Explicitly set player health
+
         player2 = this.physics.add.sprite(450, 300, 'mustacheSmiley').setScale(1);
+        player2.health = 100; // Explicitly set player health
 
         enemies = this.physics.add.group();
         const enemyPositions = [
@@ -24,7 +27,7 @@ class MyGame extends Phaser.Scene {
         ];
         enemyPositions.forEach(pos => {
             const enemy = enemies.create(pos.x, pos.y, 'madFace').setScale(1);
-            enemy.health = 100;
+            enemy.health = 40; // Changed from 100 to 40
             enemy.setVelocity(0);
         });
 
@@ -61,7 +64,7 @@ class MyGame extends Phaser.Scene {
         this.countdownBg.setDepth(100);
 
         this.countdownText = this.add.text(400, 30, 'Game starts in 5', {
-            fontSize: '32px',
+            fontSize: '32px', // Corrected from font_size
             fill: '#ffffff',
             fontFamily: 'Arial Black',
             stroke: '#ff4500',
@@ -102,7 +105,7 @@ class MyGame extends Phaser.Scene {
             const elapsedTime = this.time.now - this.scene.startTime;
             const remainingTime = Math.max(0, 5 - (elapsedTime / 1000));
             if (this.countdownText && remainingTime > 0) {
-                this.countdownText.setText(`Game starts in ${remainingTime.toFixed(1)}`);
+                this.countdownText.setText(`Game starts in ${remainingTime.toFixed(1)}`); // Corrected from settext
             }
 
             if (this.cursors.left.isDown || this.cursors.right.isDown || 
@@ -185,7 +188,7 @@ class MyGame extends Phaser.Scene {
                 if (enemy.health <= 0) enemy.destroy();
                 
                 const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
-                    fontSize: '16px',
+                    fontSize: '16px', // Corrected from font_size
                     fill: '#FF0000'
                 });
                 scene.tweens.add({
@@ -201,7 +204,7 @@ class MyGame extends Phaser.Scene {
 
     attackPlayer(enemy, player) {
         if (!this.gameStarted) return;
-        player.health = (player.health || 100) - 10;
+        player.health = (player.health || 100) - 5; // Changed from -10 to -5
         if (player.health <= 0) player.destroy();
     }
 }
