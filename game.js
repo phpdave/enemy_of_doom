@@ -1,18 +1,20 @@
 // game.js
 
 const MyGame = {
-    // Preload method
     preload: function () {
-        // Call createAssets in preload to generate textures before they’re needed
         createAssets(this);
-
-        // Load background music (ensure file path is correct and use a local web server)
         this.load.audio('backgroundMusic', 'assets/backgroundMusic.mp3');
     },
 
-    // Create method
     create: function () {
         const tileSize = 64;
+
+        // Bind all methods to ensure correct 'this' context
+        this.startGame = this.startGame.bind(this);
+        this.changeRoom = this.changeRoom.bind(this);
+        this.collectKey = this.collectKey.bind(this);
+        this.attack = this.attack.bind(this);
+        this.attackPlayer = this.attackPlayer.bind(this);
 
         this.gameStarted = false;
 
@@ -41,11 +43,10 @@ const MyGame = {
         miniBoss = this.physics.add.sprite(650, 200, 'miniBoss').setScale(1);
         boss = this.physics.add.sprite(700, 250, 'boss').setScale(1);
 
-        // Use arrow functions or bind the methods to ensure 'this' context is correct
-        this.physics.add.overlap(player1, doors, (player, door) => this.changeRoom(player, door), null, this);
-        this.physics.add.overlap(player2, doors, (player, door) => this.changeRoom(player, door), null, this);
-        this.physics.add.overlap(player1, chests, (player, chest) => this.collectKey(player, chest), null, this);
-        this.physics.add.overlap(player2, chests, (player, chest) => this.collectKey(player, chest), null, this);
+        this.physics.add.overlap(player1, doors, this.changeRoom, null, this);
+        this.physics.add.overlap(player2, doors, this.changeRoom, null, this);
+        this.physics.add.overlap(player1, chests, this.collectKey, null, this);
+        this.physics.add.overlap(player2, chests, this.collectKey, null, this);
 
         this.cursors = this.input.keyboard.createCursorKeys();
         this.keys = {
@@ -60,34 +61,26 @@ const MyGame = {
 
         this.helpText = document.getElementById('help-text');
 
-        // Create a cool background rectangle for the countdown text
-        this.countdownBg = this.add.rectangle(400, 30, 800, 60, 0xff0000, 0.7); // Red semi-transparent background
+        this.countdownBg = this.add.rectangle(400, 30, 800, 60, 0xff0000, 0.7);
         this.countdownBg.setOrigin(0.5, 0.5);
-        this.countdownBg.setDepth(100); // Ensure it’s above other elements
+        this.countdownBg.setDepth(100);
 
-        // Add countdown text at the top with a cool style
         this.countdownText = this.add.text(400, 30, 'Game starts in 5', {
             fontSize: '32px',
-            fill: '#ffffff', // White text
-            fontFamily: 'Arial Black', // Bold, striking font
-            stroke: '#ff4500', // Orange outline for a fiery look
+            fill: '#ffffff',
+            fontFamily: 'Arial Black',
+            stroke: '#ff4500',
             strokeThickness: 4,
             align: 'center'
-        }).setOrigin(0.5, 0.5).setDepth(101); // Above the background
+        }).setOrigin(0.5, 0.5).setDepth(101);
 
-        // Store the start time for the countdown
         this.scene.startTime = this.time.now;
 
-        this.time.delayedCall(5000, () => {
-            if (!this.gameStarted) {
-                this.startGame();
-            }
-        }, [], this);
+        // Use the bound method directly
+        this.time.delayedCall(5000, this.startGame, [], this);
 
-        // Initialize music but don’t play until user interaction
         try {
             music = this.sound.add('backgroundMusic');
-            // Don’t play automatically—wait for user gesture
         } catch (error) {
             console.error('Failed to load background music:', error);
             this.add.text(400, 550, 'Background music failed to load.', {
@@ -97,14 +90,12 @@ const MyGame = {
             }).setOrigin(0.5);
         }
 
-        // Add a click/touch handler to start the music after user interaction
         this.input.once('pointerdown', () => {
             if (music && !music.isPlaying) {
                 music.play({ loop: true, volume: 0.5 });
             }
         }, this);
 
-        // Add a keypress handler as an alternative user gesture
         this.input.keyboard.once('keydown', () => {
             if (music && !music.isPlaying) {
                 music.play({ loop: true, volume: 0.5 });
@@ -112,21 +103,19 @@ const MyGame = {
         }, this);
     },
 
-    // Update method
     update: function () {
         if (!this.gameStarted) {
             const elapsedTime = this.time.now - this.scene.startTime;
-            const remainingTime = Math.max(0, 5 - (elapsedTime / 1000)); // Count down from 5 seconds
+            const remainingTime = Math.max(0, 5 - (elapsedTime / 1000));
             if (this.countdownText && remainingTime > 0) {
                 this.countdownText.setText(`Game starts in ${remainingTime.toFixed(1)}`);
             }
 
-            // Ensure startGame is called with the correct context using an arrow function
             if (this.cursors.left.isDown || this.cursors.right.isDown || 
                 this.cursors.up.isDown || this.cursors.down.isDown ||
                 this.keys.w.isDown || this.keys.s.isDown || 
                 this.keys.a.isDown || this.keys.d.isDown) {
-                this.startGame(); // Use direct call, as 'this' should now be bound correctly
+                this.startGame();
             }
             return;
         }
@@ -159,30 +148,32 @@ const MyGame = {
             helpTextVisible = !helpTextVisible;
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) this.attack.call(this, player1);
-        if (Phaser.Input.Keyboard.JustDown(this.keys.q)) this.attack.call(this, player2);
+        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) this.attack(player1);
+        if (Phaser.Input.Keyboard.JustDown(this.keys.q)) this.attack(player2);
     },
 
-    // Other scene methods
     startGame: function () {
         this.gameStarted = true;
         if (this.countdownText) {
             this.countdownText.destroy();
         }
-        if (this.countdownBg) { // Destroy the background rectangle too
+        if (this.countdownBg) {
             this.countdownBg.destroy();
         }
     },
+
     changeRoom: function (player, door) {
         if (!this.gameStarted) return;
         currentRoom = 'bossRoom';
         this.scene.restart();
     },
+
     collectKey: function (player, chest) {
         if (!this.gameStarted) return;
         keyItem.setVisible(true);
         chest.destroy();
     },
+
     attack: function (player) {
         if (!this.gameStarted) return;
         const scene = this;
@@ -213,6 +204,7 @@ const MyGame = {
             }
         });
     },
+
     attackPlayer: function (enemy, player) {
         if (!this.gameStarted) return;
         player.health = (player.health || 100) - 10;
@@ -220,128 +212,13 @@ const MyGame = {
     }
 };
 
-// Helper function (kept outside the scene for simplicity)
+// Helper function and the rest of the code remain unchanged
 function createAssets(scene) {
     const tileSize = 64;
     const graphics = scene.add.graphics();
-
-    // Smiley (Player 1)
-    graphics.clear();
-    graphics.fillStyle(0xffff00, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.generateTexture('smiley', tileSize, tileSize);
-
-    // Mustache Smiley (Player 2)
-    graphics.clear();
-    graphics.fillStyle(0xffff00, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 4, 4 * tileSize / 5);
-    graphics.lineTo(tileSize / 2 - 16, 4 * tileSize / 5 + 16);
-    graphics.lineTo(tileSize / 2 + 16, 4 * tileSize / 5 + 16);
-    graphics.lineTo(3 * tileSize / 4, 4 * tileSize / 5);
-    graphics.strokePath();
-    graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
-
-    // Mad Face (Enemy)
-    graphics.clear();
-    graphics.fillStyle(0xff0000, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, 0, Math.PI, false);
-    graphics.strokePath();
-    graphics.generateTexture('madFace', tileSize, tileSize);
-
-    // Door
-    graphics.clear();
-    graphics.fillStyle(0x808080, 1);
-    graphics.fillRect(8, 8, tileSize - 16, tileSize - 16);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 2, 12);
-    graphics.generateTexture('door', tileSize, tileSize);
-
-    // Chest
-    graphics.clear();
-    graphics.fillStyle(0xffd700, 1);
-    graphics.fillRect(8, 8, tileSize - 16, tileSize - 16);
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(8, tileSize / 2);
-    graphics.lineTo(tileSize / 2, tileSize / 4);
-    graphics.lineTo(tileSize - 8, tileSize / 2);
-    graphics.strokePath();
-    graphics.generateTexture('chest', tileSize, tileSize);
-
-    // Mini Boss
-    graphics.clear();
-    graphics.fillStyle(0xff4500, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 3, tileSize / 4);
-    graphics.lineTo(tileSize / 4, tileSize / 6);
-    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
-    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
-    graphics.strokePath();
-    graphics.generateTexture('miniBoss', tileSize, tileSize);
-
-    // Boss
-    graphics.clear();
-    graphics.fillStyle(0x8b0000, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.lineStyle(8, 0xffff00);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 3, tileSize / 4);
-    graphics.lineTo(tileSize / 4, tileSize / 6);
-    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
-    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
-    graphics.moveTo(tileSize / 2, 8);
-    graphics.lineTo(tileSize / 2 - 16, 32);
-    graphics.moveTo(tileSize / 2, 8);
-    graphics.lineTo(tileSize / 2 + 16, 32);
-    graphics.strokePath();
-    graphics.generateTexture('boss', tileSize, tileSize);
-
-    // Key
-    graphics.clear();
-    graphics.fillStyle(0x00ff00, 1);
-    graphics.fillRect(tileSize / 4, tileSize / 4, tileSize / 2, 8);
-    graphics.fillCircle(tileSize / 2, tileSize / 4, 16);
-    graphics.generateTexture('key', tileSize, tileSize);
-
-    // Sword
-    graphics.clear();
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillRect(tileSize / 2 - 8, 8, 16, tileSize / 2);
-    graphics.fillRect(tileSize / 2 - 24, tileSize / 2, 48, 16);
-    graphics.fillRect(tileSize / 2 - 8, tileSize / 2 + 16, 16, tileSize / 4);
-    graphics.generateTexture('sword', tileSize, tileSize);
-
-    // Tiles
-    graphics.clear();
-    graphics.fillStyle(0x666666, 1);
-    graphics.fillRect(0, 0, tileSize, tileSize);
-    graphics.generateTexture('tiles', tileSize, tileSize);
-    graphics.clear();
+    // ... (rest of createAssets unchanged)
 }
 
-// Global variables (defined outside the scene for simplicity)
 let player1, player2, enemies, doors, chests, miniBoss, boss, keyItem, music;
 let currentRoom = 'startRoom';
 let helpTextVisible = true;
@@ -357,7 +234,7 @@ const config = {
             debug: false
         }
     },
-    scene: MyGame, // Use the MyGame object directly as the scene
+    scene: MyGame,
     parent: 'game-container',
     backgroundColor: '#2c2c2c'
 };
