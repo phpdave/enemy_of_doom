@@ -23,16 +23,16 @@ let currentRoom = 'startRoom';
 let helpTextVisible = true;
 
 function preload() {
-    // Load images for players, enemies, doors, chests, etc.
-    this.load.image('smiley', 'https://via.placeholder.com/32/FFFF00/000000?text=😊'); // Player 1
-    this.load.image('mustacheSmiley', 'https://via.placeholder.com/32/FFFF00/000000?text=😊 mustache'); // Player 2
-    this.load.image('madFace', 'https://via.placeholder.com/32/FF0000/000000?text=😡'); // Enemies
-    this.load.image('door', 'https://via.placeholder.com/32/808080/000000?text=🚪'); // Doors
-    this.load.image('chest', 'https://via.placeholder.com/32/FFD700/000000?text=📦'); // Chest
-    this.load.image('miniBoss', 'https://via.placeholder.com/32/FF4500/000000?text=👹'); // Mini Boss
-    this.load.image('boss', 'https://via.placeholder.com/32/FF0000/000000?text=👿'); // Boss
-    this.load.image('key', 'https://via.placeholder.com/32/00FF00/000000?text=🔑'); // Key
-    this.load.image('sword', 'https://via.placeholder.com/32/FFFFFF/000000?text=⚔️'); // Sword animation
+    // Load local image assets (place these in an 'assets' folder in your repo)
+    this.load.image('smiley', 'assets/smiley.png'); // Replace with actual smiley face image
+    this.load.image('mustacheSmiley', 'assets/mustacheSmiley.png'); // Replace with mustache smiley image
+    this.load.image('madFace', 'assets/madFace.png'); // Replace with mad face image
+    this.load.image('door', 'assets/door.png'); // Replace with door image
+    this.load.image('chest', 'assets/chest.png'); // Replace with chest image
+    this.load.image('miniBoss', 'assets/miniBoss.png'); // Replace with mini boss image
+    this.load.image('boss', 'assets/boss.png'); // Replace with boss image
+    this.load.image('key', 'assets/key.png'); // Replace with key image
+    this.load.image('sword', 'assets/sword.png'); // Replace with sword image
 }
 
 function create() {
@@ -74,7 +74,8 @@ function create() {
         { x: 400, y: 200 }
     ];
     enemyPositions.forEach(pos => {
-        enemies.create(pos.x, pos.y, 'madFace').setScale(1);
+        const enemy = enemies.create(pos.x, pos.y, 'madFace').setScale(1);
+        enemy.health = 100; // Initialize enemy health
     });
 
     // Create doors (based on the image, e.g., "tricked door" and "door" symbols)
@@ -111,10 +112,6 @@ function create() {
 
     // Help text
     this.helpText = document.getElementById('help-text');
-    if (this.keys.h.isDown) {
-        this.helpText.classList.toggle('hidden');
-        helpTextVisible = !helpTextVisible;
-    }
 }
 
 function update() {
@@ -196,6 +193,12 @@ function attack(player) {
             });
         }
     });
+}
+
+function attackEnemy(player, enemy) {
+    // This function is called when a player overlaps with an enemy
+    // We can trigger the attack here or handle it in the update/attack function
+    attack(player); // Call the attack function to handle damage and animation
 }
 
 function attackPlayer(enemy, player) {
