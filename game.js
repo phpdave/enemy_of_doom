@@ -8,7 +8,7 @@ const tileSize = 40; // 20x15 grid fits in 800x600 canvas
 const gridWidth = 20;
 const gridHeight = 15;
 
-// Dungeon layout based on the graph paper (10x10 grid, scaled to 20x15 for canvas)
+// Updated dungeon layout to match 20x15 grid, based on the graph paper (scaled up)
 const dungeonLayout = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1], // Wall
     [1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 1], // Path
@@ -20,7 +20,11 @@ const dungeonLayout = [
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
     [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
-    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
+    [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 1],
+    [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1],
+    [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1] // Wall
 ];
 
 // Game objects
@@ -49,10 +53,10 @@ function draw() {
     // Draw dungeon
     for (let y = 0; y < gridHeight; y++) {
         for (let x = 0; x < gridWidth; x++) {
-            if (dungeonLayout[y][x] === 1) {
+            if (dungeonLayout[y] && dungeonLayout[y][x] === 1) { // Check if row exists
                 ctx.fillStyle = '#666';
                 ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
-            } else {
+            } else if (dungeonLayout[y]) { // Ensure row exists
                 ctx.fillStyle = '#444';
                 ctx.fillRect(x * tileSize, y * tileSize, tileSize, tileSize);
             }
@@ -60,19 +64,21 @@ function draw() {
     }
 
     // Draw player
-    ctx.fillStyle = player.color;
-    ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
+    if (player.x >= 0 && player.x < gridWidth && player.y >= 0 && player.y < gridHeight) {
+        ctx.fillStyle = player.color;
+        ctx.fillRect(player.x * tileSize, player.y * tileSize, tileSize, tileSize);
+    }
 
     // Draw enemies
     enemies.forEach(enemy => {
-        if (enemy.health > 0) {
+        if (enemy.health > 0 && enemy.x >= 0 && enemy.x < gridWidth && enemy.y >= 0 && enemy.y < gridHeight) {
             ctx.fillStyle = enemy.color;
             ctx.fillRect(enemy.x * tileSize, enemy.y * tileSize, tileSize, tileSize);
         }
     });
 
     // Draw chest
-    if (!chest.collected) {
+    if (!chest.collected && chest.x >= 0 && chest.x < gridWidth && chest.y >= 0 && chest.y < gridHeight) {
         ctx.fillStyle = chest.color;
         ctx.fillRect(chest.x * tileSize, chest.y * tileSize, tileSize, tileSize);
     }
@@ -87,22 +93,25 @@ function movePlayer(dx, dy) {
     const newX = player.x + dx;
     const newY = player.y + dy;
 
-    if (newX >= 0 && newX < gridWidth && newY >= 0 && newY < gridHeight && dungeonLayout[newY][newX] === 0) {
-        player.x = newX;
-        player.y = newY;
+    // Check boundaries and walls
+    if (newX >= 0 && newX < gridWidth && newY >= 0 && newY < gridHeight) {
+        if (dungeonLayout[newY] && dungeonLayout[newY][newX] === 0) { // Ensure row exists and is a path
+            player.x = newX;
+            player.y = newY;
 
-        // Check for collisions with enemies
-        enemies.forEach(enemy => {
-            if (enemy.health > 0 && player.x === enemy.x && player.y === enemy.y) {
-                attackEnemy(enemy);
+            // Check for collisions with enemies
+            enemies.forEach(enemy => {
+                if (enemy.health > 0 && player.x === enemy.x && player.y === enemy.y) {
+                    attackEnemy(enemy);
+                }
+            });
+
+            // Check for chest
+            if (player.x === chest.x && player.y === chest.y && !chest.collected) {
+                chest.collected = true;
+                keysCollected++;
+                console.log('Key collected!');
             }
-        });
-
-        // Check for chest
-        if (player.x === chest.x && player.y === chest.y && !chest.collected) {
-            chest.collected = true;
-            keysCollected++;
-            console.log('Key collected!');
         }
     }
     draw();
