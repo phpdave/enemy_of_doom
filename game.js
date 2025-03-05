@@ -23,16 +23,138 @@ let currentRoom = 'startRoom';
 let helpTextVisible = true;
 
 function preload() {
-    // Load local image assets (place these in an 'assets' folder in your repo)
-    this.load.image('smiley', 'assets/smiley.png'); // Replace with actual smiley face image
-    this.load.image('mustacheSmiley', 'assets/mustacheSmiley.png'); // Replace with mustache smiley image
-    this.load.image('madFace', 'assets/madFace.png'); // Replace with mad face image
-    this.load.image('door', 'assets/door.png'); // Replace with door image
-    this.load.image('chest', 'assets/chest.png'); // Replace with chest image
-    this.load.image('miniBoss', 'assets/miniBoss.png'); // Replace with mini boss image
-    this.load.image('boss', 'assets/boss.png'); // Replace with boss image
-    this.load.image('key', 'assets/key.png'); // Replace with key image
-    this.load.image('sword', 'assets/sword.png'); // Replace with sword image
+    // Create all assets programmatically using Phaser Graphics
+    this.textures.remove('smiley');
+    this.textures.remove('mustacheSmiley');
+    this.textures.remove('madFace');
+    this.textures.remove('door');
+    this.textures.remove('chest');
+    this.textures.remove('miniBoss');
+    this.textures.remove('boss');
+    this.textures.remove('key');
+    this.textures.remove('sword');
+
+    createAssets(this);
+}
+
+function createAssets(scene) {
+    const tileSize = 32;
+    const graphics = scene.add.graphics();
+
+    // Smiley (Player 1) - Yellow circle with black eyes and smile
+    graphics.clear();
+    graphics.fillStyle(0xffff00, 1); // Yellow
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 2);
+    graphics.fillStyle(0x000000, 1); // Black
+    graphics.fillCircle(tileSize / 4, tileSize / 3, 2); // Left eye
+    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 2); // Right eye
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 3, 2 * tileSize / 3);
+    graphics.lineTo(2 * tileSize / 3, 2 * tileSize / 3);
+    graphics.quadraticCurveTo(tileSize / 2, tileSize / 2, tileSize / 3, 2 * tileSize / 3);
+    graphics.strokePath();
+    graphics.generateTexture('smiley', tileSize, tileSize);
+    graphics.clear();
+
+    // Mustache Smiley (Player 2) - Yellow circle with black eyes, smile, and mustache
+    graphics.fillStyle(0xffff00, 1); // Yellow
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 2);
+    graphics.fillStyle(0x000000, 1); // Black
+    graphics.fillCircle(tileSize / 4, tileSize / 3, 2); // Left eye
+    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 2); // Right eye
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 3, 2 * tileSize / 3);
+    graphics.lineTo(2 * tileSize / 3, 2 * tileSize / 3);
+    graphics.quadraticCurveTo(tileSize / 2, tileSize / 2, tileSize / 3, 2 * tileSize / 3);
+    graphics.strokePath();
+    // Mustache (simple curved lines)
+    graphics.lineStyle(2, 0x000000);
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 4, 4 * tileSize / 5);
+    graphics.quadraticCurveTo(tileSize / 2, tileSize, 3 * tileSize / 4, 4 * tileSize / 5);
+    graphics.strokePath();
+    graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
+    graphics.clear();
+
+    // Mad Face (Enemy) - Red circle with angry eyes and frown
+    graphics.fillStyle(0xff0000, 1); // Red
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 2);
+    graphics.fillStyle(0x000000, 1); // Black
+    graphics.fillCircle(tileSize / 4, tileSize / 3, 2); // Left eye
+    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 2); // Right eye
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 3, tileSize / 2);
+    graphics.lineTo(2 * tileSize / 3, tileSize / 2);
+    graphics.quadraticCurveTo(tileSize / 2, 2 * tileSize / 3, tileSize / 3, tileSize / 2);
+    graphics.strokePath();
+    graphics.generateTexture('madFace', tileSize, tileSize);
+    graphics.clear();
+
+    // Door - Gray rectangle with a handle
+    graphics.fillStyle(0x808080, 1); // Gray
+    graphics.fillRect(2, 2, tileSize - 4, tileSize - 4);
+    graphics.fillStyle(0x000000, 1); // Black handle
+    graphics.fillCircle(tileSize / 4, tileSize / 2, 3);
+    graphics.generateTexture('door', tileSize, tileSize);
+    graphics.clear();
+
+    // Chest - Gold rectangle with a lid
+    graphics.fillStyle(0xffd700, 1); // Gold
+    graphics.fillRect(2, 2, tileSize - 4, tileSize - 4);
+    graphics.lineStyle(2, 0x000000); // Black outline for lid
+    graphics.beginPath();
+    graphics.moveTo(2, tileSize / 2);
+    graphics.lineTo(tileSize / 2, tileSize / 4);
+    graphics.lineTo(tileSize - 2, tileSize / 2);
+    graphics.strokePath();
+    graphics.generateTexture('chest', tileSize, tileSize);
+    graphics.clear();
+
+    // Mini Boss - Red circle with horns
+    graphics.fillStyle(0xff4500, 1); // Orange-red
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 2);
+    graphics.lineStyle(2, 0x000000); // Black horns
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 3, tileSize / 4);
+    graphics.lineTo(tileSize / 4, tileSize / 6);
+    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
+    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
+    graphics.strokePath();
+    graphics.generateTexture('miniBoss', tileSize, tileSize);
+    graphics.clear();
+
+    // Boss - Dark red circle with horns and spikes
+    graphics.fillStyle(0x8b0000, 1); // Dark red
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 2);
+    graphics.lineStyle(2, 0xffff00); // Yellow horns and spikes
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 3, tileSize / 4);
+    graphics.lineTo(tileSize / 4, tileSize / 6);
+    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
+    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
+    // Add simple spikes
+    graphics.moveTo(tileSize / 2, 2);
+    graphics.lineTo(tileSize / 2 - 4, 8);
+    graphics.moveTo(tileSize / 2, 2);
+    graphics.lineTo(tileSize / 2 + 4, 8);
+    graphics.strokePath();
+    graphics.generateTexture('boss', tileSize, tileSize);
+    graphics.clear();
+
+    // Key - Green key shape
+    graphics.fillStyle(0x00ff00, 1); // Green
+    graphics.fillRect(tileSize / 4, tileSize / 4, tileSize / 2, 2); // Shaft
+    graphics.fillCircle(tileSize / 2, tileSize / 4, 4); // Head of key
+    graphics.generateTexture('key', tileSize, tileSize);
+    graphics.clear();
+
+    // Sword - White sword shape
+    graphics.fillStyle(0xffffff, 1); // White
+    graphics.fillRect(tileSize / 2 - 2, 2, 4, tileSize / 2); // Blade
+    graphics.fillRect(tileSize / 2 - 6, tileSize / 2, 12, 4); // Crossguard
+    graphics.fillRect(tileSize / 2 - 2, tileSize / 2 + 4, 4, tileSize / 4); // Handle
+    graphics.generateTexture('sword', tileSize, tileSize);
+    graphics.clear();
 }
 
 function create() {
