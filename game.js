@@ -158,10 +158,11 @@ function create() {
     miniBoss = this.physics.add.sprite(650, 200, 'miniBoss').setScale(1);
     boss = this.physics.add.sprite(700, 250, 'boss').setScale(1);
 
-    this.physics.add.overlap(player1, doors, changeRoom, null, this);
-    this.physics.add.overlap(player2, doors, changeRoom, null, this);
-    this.physics.add.overlap(player1, chests, collectKey, null, this);
-    this.physics.add.overlap(player2, chests, collectKey, null, this);
+    // Use arrow functions or bind the methods to ensure 'this' context is correct
+    this.physics.add.overlap(player1, doors, (player, door) => this.changeRoom(player, door), null, this);
+    this.physics.add.overlap(player2, doors, (player, door) => this.changeRoom(player, door), null, this);
+    this.physics.add.overlap(player1, chests, (player, chest) => this.collectKey(player, chest), null, this);
+    this.physics.add.overlap(player2, chests, (player, chest) => this.collectKey(player, chest), null, this);
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.keys = {
@@ -255,11 +256,11 @@ const MyGame = {
         enemies.getChildren().forEach(enemy => {
             this.physics.moveToObject(enemy, player1, 100);
             if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player1.x, player1.y) < 20) {
-                attackPlayer(enemy, player1);
+                this.attackPlayer(enemy, player1);
             }
             this.physics.moveToObject(enemy, player2, 100);
             if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player2.x, player2.y) < 20) {
-                attackPlayer(enemy, player2);
+                this.attackPlayer(enemy, player2);
             }
         });
 
@@ -268,8 +269,8 @@ const MyGame = {
             helpTextVisible = !helpTextVisible;
         }
 
-        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) attack.call(this, player1);
-        if (Phaser.Input.Keyboard.JustDown(this.keys.q)) attack.call(this, player2);
+        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) this.attack.call(this, player1);
+        if (Phaser.Input.Keyboard.JustDown(this.keys.q)) this.attack.call(this, player2);
     },
     changeRoom: function (player, door) {
         if (!this.gameStarted) return;
