@@ -215,6 +215,7 @@ function create() {
 }
 
 const MyGame = {
+    // Ensure startGame is properly bound as a method
     startGame: function () {
         this.gameStarted = true;
         if (this.countdownText) {
@@ -232,11 +233,13 @@ const MyGame = {
                 this.countdownText.setText(`Game starts in ${remainingTime.toFixed(1)}`);
             }
 
+            // Use a bound reference to startGame to ensure context
+            const startGameBound = this.startGame.bind(this);
             if (this.cursors.left.isDown || this.cursors.right.isDown || 
                 this.cursors.up.isDown || this.cursors.down.isDown ||
                 this.keys.w.isDown || this.keys.s.isDown || 
                 this.keys.a.isDown || this.keys.d.isDown) {
-                this.startGame();
+                startGameBound();
             }
             return;
         }
