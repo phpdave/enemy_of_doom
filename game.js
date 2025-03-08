@@ -1,3 +1,24 @@
+// Define the SplashScene
+class SplashScene extends Phaser.Scene {
+    constructor() {
+        super('SplashScene');
+    }
+
+    preload() {
+        // Load the splash image
+        this.load.image('splash', 'enemy_of_doom_splash.jpg');
+    }
+
+    create() {
+        // Display the splash image centered on the 800x600 canvas
+        this.add.image(400, 300, 'splash').setOrigin(0.5);
+        // Wait 3 seconds, then start the MyGame scene
+        this.time.delayedCall(3000, () => {
+            this.scene.start('MyGame');
+        }, [], this);
+    }
+}
+
 class MyGame extends Phaser.Scene {
     constructor() {
         super('MyGame');
@@ -15,9 +36,11 @@ class MyGame extends Phaser.Scene {
 
         player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1);
         player1.health = 100;
+        player1.setCollideWorldBounds(true); // Prevent player1 from leaving the canvas
 
         player2 = this.physics.add.sprite(450, 300, 'mustacheSmiley').setScale(1);
         player2.health = 100;
+        player2.setCollideWorldBounds(true); // Prevent player2 from leaving the canvas
 
         enemies = this.physics.add.group();
         const enemyPositions = [
@@ -29,6 +52,21 @@ class MyGame extends Phaser.Scene {
             const enemy = enemies.create(pos.x, pos.y, 'madFace').setScale(1);
             enemy.health = 40;
             enemy.setVelocity(0);
+            enemy.setCollideWorldBounds(true); // Already set to prevent enemies from leaving
+            this.time.addEvent({
+                delay: 2000,
+                callback: () => {
+                    if (enemy && enemy.active) {
+                        const angle = Phaser.Math.Between(0, 360);
+                        const speed = 100;
+                        enemy.setVelocity(
+                            Math.cos(angle * Math.PI / 180) * speed,
+                            Math.sin(angle * Math.PI / 180) * speed
+                        );
+                    }
+                },
+                loop: true
+            });
         });
 
         doors = this.physics.add.group();
@@ -117,36 +155,43 @@ class MyGame extends Phaser.Scene {
             return;
         }
 
-        player1.setVelocity(0);
-        if (this.cursors.left.isDown) player1.setVelocityX(-200);
-        if (this.cursors.right.isDown) player1.setVelocityX(200);
-        if (this.cursors.up.isDown) player1.setVelocityY(-200);
-        if (this.cursors.down.isDown) player1.setVelocityY(200);
+        // Player 1 movement
+        if (player1 && player1.active) {
+            player1.setVelocity(0);
+            if (this.cursors.left.isDown) player1.setVelocityX(-200);
+            if (this.cursors.right.isDown) player1.setVelocityX(200);
+            if (this.cursors.up.isDown) player1.setVelocityY(-200);
+            if (this.cursors.down.isDown) player1.setVelocityY(200);
+        }
 
-        player2.setVelocity(0);
-        if (this.keys.w.isDown) player2.setVelocityY(-200);
-        if (this.keys.s.isDown) player2.setVelocityY(200);
-        if (this.keys.a.isDown) player2.setVelocityX(-200);
-        if (this.keys.d.isDown) player2.setVelocityX(200);
+        // Player 2 movement
+        if (player2 && player2.active) {
+            player2.setVelocity(0);
+            if (this.keys.w.isDown) player2.setVelocityY(-200);
+            if (this.keys.s.isDown) player2.setVelocityY(200);
+            if (this.keys.a.isDown) player2.setVelocityX(-200);
+            if (this.keys.d.isDown) player2.setVelocityX(200);
+        }
 
+        // Enemy attack logic
         enemies.getChildren().forEach(enemy => {
-            this.physics.moveToObject(enemy, player1, 100);
-            if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player1.x, player1.y) < 20) {
+            if (player1 && player1.active && Phaser.Math.Distance.Between(enemy.x, enemy.y, player1.x, player1.y) < 20) {
                 this.attackPlayer(enemy, player1);
             }
-            this.physics.moveToObject(enemy, player2, 100);
-            if (Phaser.Math.Distance.Between(enemy.x, enemy.y, player2.x, player2.y) < 20) {
+            if (player2 && player2.active && Phaser.Math.Distance.Between(enemy.x, enemy.y, player2.x, player2.y) < 20) {
                 this.attackPlayer(enemy, player2);
             }
         });
 
+        // Player attacks
+        if (player1 && player1.active && Phaser.Input.Keyboard.JustDown(this.keys.space)) this.attack(player1);
+        if (player2 && player2.active && Phaser.Input.Keyboard.JustDown(this.keys.q)) this.attack(player2);
+
+        // Toggle help text
         if (Phaser.Input.Keyboard.JustDown(this.keys.h)) {
             this.helpText.classList.toggle('hidden');
             helpTextVisible = !helpTextVisible;
         }
-
-        if (Phaser.Input.Keyboard.JustDown(this.keys.space)) this.attack(player1);
-        if (Phaser.Input.Keyboard.JustDown(this.keys.q)) this.attack(player2);
     }
 
     startGame() {
@@ -184,7 +229,7 @@ class MyGame extends Phaser.Scene {
 
         enemies.getChildren().forEach(enemy => {
             if (Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y) < 50) {
-                enemy.health = (enemy.health || 40) - 20; // Changed default from 100 to 40
+                enemy.health = (enemy.health || 40) - 20;
                 if (enemy.health <= 0) enemy.destroy();
                 
                 const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
@@ -213,48 +258,119 @@ function createAssets(scene) {
     const tileSize = 64;
     const graphics = scene.add.graphics();
 
-    // Smiley (Player 1)
+    // Smiley (Player 1) with improved face
     graphics.clear();
     graphics.fillStyle(0xffff00, 1);
     graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
     graphics.fillStyle(0x000000, 1);
     graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
     graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
+    graphics.lineStyle(4, 0x000000);
+    graphics.beginPath();
+    graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+    graphics.strokePath();
+    graphics.beginPath();
+    graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+    graphics.strokePath();
+    graphics.lineStyle(6, 0x000000);
     graphics.beginPath();
     graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
     graphics.generateTexture('smiley', tileSize, tileSize);
 
-    // Mustache Smiley (Player 2)
+    // Mustache Smiley (Player 2) with improved face and mustache
     graphics.clear();
     graphics.fillStyle(0xffff00, 1);
     graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
     graphics.fillStyle(0x000000, 1);
     graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
     graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
+    graphics.lineStyle(4, 0x000000);
+    graphics.beginPath();
+    graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+    graphics.strokePath();
+    graphics.beginPath();
+    graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+    graphics.strokePath();
+    graphics.lineStyle(6, 0x000000);
     graphics.beginPath();
     graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 4, 4 * tileSize / 5);
-    graphics.lineTo(tileSize / 2 - 16, 4 * tileSize / 5 + 16);
-    graphics.lineTo(tileSize / 2 + 16, 4 * tileSize / 5 + 16);
-    graphics.lineTo(3 * tileSize / 4, 4 * tileSize / 5);
-    graphics.strokePath();
+    graphics.lineStyle(2, 0x000000);
+    for (let i = 0; i < 4; i++) {
+        graphics.beginPath();
+        graphics.moveTo(tileSize / 2 - i * 8, 4 * tileSize / 5);
+        graphics.lineTo(tileSize / 2 - i * 8 - 8, 4 * tileSize / 5 + 16);
+        graphics.strokePath();
+        graphics.beginPath();
+        graphics.moveTo(tileSize / 2 + i * 8, 4 * tileSize / 5);
+        graphics.lineTo(tileSize / 2 + i * 8 + 8, 4 * tileSize / 5 + 16);
+        graphics.strokePath();
+    }
     graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
 
-    // Mad Face (Enemy)
+    // Mad Face (Enemy) with improved angry expression
     graphics.clear();
     graphics.fillStyle(0xff0000, 1);
     graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
     graphics.fillStyle(0x000000, 1);
     graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
     graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
+    graphics.lineStyle(4, 0x000000);
     graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, 0, Math.PI, false);
+    graphics.moveTo(tileSize / 4 - 10, tileSize / 3 - 10);
+    graphics.lineTo(tileSize / 4 + 10, tileSize / 3 + 5);
+    graphics.moveTo(3 * tileSize / 4 + 10, tileSize / 3 - 10);
+    graphics.lineTo(3 * tileSize / 4 - 10, tileSize / 3 + 5);
+    graphics.strokePath();
+    graphics.beginPath();
+    graphics.arc(tileSize / 2, tileSize / 2 + 10, tileSize / 4, Math.PI, 2 * Math.PI, true);
     graphics.strokePath();
     graphics.generateTexture('madFace', tileSize, tileSize);
+
+    // Mini Boss with added face
+    graphics.clear();
+    graphics.fillStyle(0xff4500, 1);
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillCircle(tileSize / 3, tileSize / 3, 6);
+    graphics.fillCircle(2 * tileSize / 3, tileSize / 3, 6);
+    graphics.lineStyle(4, 0x000000);
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 4, 2 * tileSize / 3);
+    graphics.lineTo(3 * tileSize / 4, 2 * tileSize / 3);
+    graphics.strokePath();
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 4, tileSize / 4);
+    graphics.lineTo(tileSize / 8, tileSize / 8);
+    graphics.moveTo(3 * tileSize / 4, tileSize / 4);
+    graphics.lineTo(7 * tileSize / 8, tileSize / 8);
+    graphics.strokePath();
+    graphics.generateTexture('miniBoss', tileSize, tileSize);
+
+    // Boss with improved face and details
+    graphics.clear();
+    graphics.fillStyle(0x8b0000, 1);
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillCircle(tileSize / 3, tileSize / 3, 8);
+    graphics.fillCircle(2 * tileSize / 3, tileSize / 3, 8);
+    graphics.lineStyle(4, 0x000000);
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 4, 2 * tileSize / 3);
+    graphics.lineTo(tileSize / 2, 3 * tileSize / 4);
+    graphics.lineTo(3 * tileSize / 4, 2 * tileSize / 3);
+    graphics.strokePath();
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillRect(tileSize / 2 - 10, 2 * tileSize / 3, 5, 10);
+    graphics.fillRect(tileSize / 2 + 5, 2 * tileSize / 3, 5, 10);
+    graphics.lineStyle(8, 0xffff00);
+    graphics.beginPath();
+    graphics.moveTo(tileSize / 4, tileSize / 4);
+    graphics.lineTo(tileSize / 2, tileSize / 8);
+    graphics.lineTo(3 * tileSize / 4, tileSize / 4);
+    graphics.strokePath();
+    graphics.generateTexture('boss', tileSize, tileSize);
 
     // Door
     graphics.clear();
@@ -275,36 +391,6 @@ function createAssets(scene) {
     graphics.lineTo(tileSize - 8, tileSize / 2);
     graphics.strokePath();
     graphics.generateTexture('chest', tileSize, tileSize);
-
-    // Mini Boss
-    graphics.clear();
-    graphics.fillStyle(0xff4500, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.lineStyle(8, 0x000000);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 3, tileSize / 4);
-    graphics.lineTo(tileSize / 4, tileSize / 6);
-    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
-    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
-    graphics.strokePath();
-    graphics.generateTexture('miniBoss', tileSize, tileSize);
-
-    // Boss
-    graphics.clear();
-    graphics.fillStyle(0x8b0000, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.lineStyle(8, 0xffff00);
-    graphics.beginPath();
-    graphics.moveTo(tileSize / 3, tileSize / 4);
-    graphics.lineTo(tileSize / 4, tileSize / 6);
-    graphics.moveTo(2 * tileSize / 3, tileSize / 4);
-    graphics.lineTo(3 * tileSize / 4, tileSize / 6);
-    graphics.moveTo(tileSize / 2, 8);
-    graphics.lineTo(tileSize / 2 - 16, 32);
-    graphics.moveTo(tileSize / 2, 8);
-    graphics.lineTo(tileSize / 2 + 16, 32);
-    graphics.strokePath();
-    graphics.generateTexture('boss', tileSize, tileSize);
 
     // Key
     graphics.clear();
@@ -344,7 +430,7 @@ const config = {
             debug: false
         }
     },
-    scene: MyGame,
+    scene: [SplashScene, MyGame], // Start with SplashScene
     parent: 'game-container',
     backgroundColor: '#2c2c2c'
 };
