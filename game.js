@@ -1,4 +1,4 @@
-// Define the SplashScene
+// Define the SplashScene (unchanged)
 class SplashScene extends Phaser.Scene {
     constructor() {
         super('SplashScene');
@@ -22,8 +22,11 @@ class MyGame extends Phaser.Scene {
     }
 
     preload() {
-        createAssets(this);
+        // Load assets (skip smiley generation for Player 1)
+        createAssets(this, false);
         this.load.audio('backgroundMusic', 'assets/backgroundMusic.mp3');
+        // Load the spritesheet for Player 1 (using dude.png as a fallback)
+        this.load.spritesheet('smiley', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
     }
 
     create() {
@@ -31,9 +34,38 @@ class MyGame extends Phaser.Scene {
 
         this.gameStarted = false;
 
-        player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1);
+        // Player 1 with animation
+        player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1.5); // Adjusted scale for 48x48 frames
         player1.health = 100;
         player1.setCollideWorldBounds(true);
+
+        // Define animations for Player 1 (using dude.png frame ranges)
+        const frames = this.anims.generateFrameNumbers('smiley');
+        console.log('Number of frames in smiley:', frames.length);
+
+        if (frames.length > 0) {
+            this.anims.create({
+                key: 'left',
+                frames: this.anims.generateFrameNumbers('smiley', { start: 0, end: 3 }),
+                frameRate: 10,
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'right',
+                frames: this.anims.generateFrameNumbers('smiley', { start: 5, end: 8 }),
+                frameRate: 10,
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'idle',
+                frames: [ { key: 'smiley', frame: 4 } ],
+                frameRate: 20
+            });
+        } else {
+            console.error('No frames found in smiley spritesheet. Using static sprite.');
+            // Fallback to static sprite if animation fails
+            player1.setTexture('smiley', 0); // Use first frame as static
+        }
 
         player2 = this.physics.add.sprite(450, 300, 'mustacheSmiley').setScale(1);
         player2.health = 100;
@@ -111,18 +143,13 @@ class MyGame extends Phaser.Scene {
 
         this.time.delayedCall(5000, this.startGame, [], this);
 
-        // Audio handling
         music = this.sound.add('backgroundMusic', { loop: true, volume: 0.5 });
         this.input.once('pointerdown', () => {
             if (this.sound.context.state === 'suspended') {
                 this.sound.context.resume().then(() => {
                     console.log('AudioContext resumed');
-                    if (!music.isPlaying) {
-                        music.play();
-                    }
-                }).catch(err => {
-                    console.error('Failed to resume AudioContext:', err);
-                });
+                    if (!music.isPlaying) music.play();
+                }).catch(err => console.error('Failed to resume AudioContext:', err));
             } else if (!music.isPlaying) {
                 music.play();
             }
@@ -132,12 +159,8 @@ class MyGame extends Phaser.Scene {
             if (this.sound.context.state === 'suspended') {
                 this.sound.context.resume().then(() => {
                     console.log('AudioContext resumed');
-                    if (!music.isPlaying) {
-                        music.play();
-                    }
-                }).catch(err => {
-                    console.error('Failed to resume AudioContext:', err);
-                });
+                    if (!music.isPlaying) music.play();
+                }).catch(err => console.error('Failed to resume AudioContext:', err));
             } else if (!music.isPlaying) {
                 music.play();
             }
@@ -161,12 +184,27 @@ class MyGame extends Phaser.Scene {
             return;
         }
 
+        // Player 1 movement with animation
         if (player1 && player1.active) {
             player1.setVelocity(0);
-            if (this.cursors.left.isDown) player1.setVelocityX(-200);
-            if (this.cursors.right.isDown) player1.setVelocityX(200);
-            if (this.cursors.up.isDown) player1.setVelocityY(-200);
-            if (this.cursors.down.isDown) player1.setVelocityY(200);
+
+            if (this.cursors.left.isDown) {
+                player1.setVelocityX(-200);
+                if (player1.anims) player1.anims.play('left', true); // Check if anims exists
+            } else if (this.cursors.right.isDown) {
+                player1.setVelocityX(200);
+                if (player1.anims) player1.anims.play('right', true);
+            } else if (this.cursors.up.isDown) {
+                player1.setVelocityY(-200);
+                // No 'up' animation in dude.png, so use idle or skip
+                if (player1.anims) player1.anims.play('idle', true);
+            } else if (this.cursors.down.isDown) {
+                player1.setVelocityY(200);
+                // No 'down' animation in dude.png, so use idle or skip
+                if (player1.anims) player1.anims.play('idle', true);
+            } else {
+                if (player1.anims) player1.anims.play('idle', true);
+            }
         }
 
         if (player2 && player2.active) {
@@ -251,28 +289,30 @@ class MyGame extends Phaser.Scene {
     }
 }
 
-function createAssets(scene) {
+function createAssets(scene, includeSmiley = true) {
     const tileSize = 64;
     const graphics = scene.add.graphics();
 
-    graphics.clear();
-    graphics.fillStyle(0xffff00, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.lineStyle(4, 0x000000);
-    graphics.beginPath();
-    graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
-    graphics.strokePath();
-    graphics.beginPath();
-    graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
-    graphics.strokePath();
-    graphics.lineStyle(6, 0x000000);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.generateTexture('smiley', tileSize, tileSize);
+    if (includeSmiley) {
+        graphics.clear();
+        graphics.fillStyle(0xffff00, 1);
+        graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
+        graphics.fillStyle(0x000000, 1);
+        graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
+        graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
+        graphics.lineStyle(4, 0x000000);
+        graphics.beginPath();
+        graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+        graphics.strokePath();
+        graphics.beginPath();
+        graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+        graphics.strokePath();
+        graphics.lineStyle(6, 0x000000);
+        graphics.beginPath();
+        graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
+        graphics.strokePath();
+        graphics.generateTexture('smiley', tileSize, tileSize);
+    }
 
     graphics.clear();
     graphics.fillStyle(0xffff00, 1);
@@ -302,21 +342,12 @@ function createAssets(scene) {
     for (let i = 0; i < 3; i++) {
         graphics.beginPath();
         graphics.moveTo(tileSize / 2 - 5 - i * 5, tileSize / 2 + 5);
-        graphics.arc(
-            tileSize / 2 - 15 - i * 5, tileSize / 2 + 15,
-            10,
-            Math.PI, 0, false
-        );
+        graphics.arc(tileSize / 2 - 15 - i * 5, tileSize / 2 + 15, 10, Math.PI, 0, false);
         graphics.lineTo(tileSize / 2 - 25 - i * 5, tileSize / 2 + 10);
         graphics.strokePath();
-
         graphics.beginPath();
         graphics.moveTo(tileSize / 2 + 5 + i * 5, tileSize / 2 + 5);
-        graphics.arc(
-            tileSize / 2 + 15 + i * 5, tileSize / 2 + 15,
-            10,
-            Math.PI, 0, false
-        );
+        graphics.arc(tileSize / 2 + 15 + i * 5, tileSize / 2 + 15, 10, Math.PI, 0, false);
         graphics.lineTo(tileSize / 2 + 25 + i * 5, tileSize / 2 + 10);
         graphics.strokePath();
     }
