@@ -277,36 +277,69 @@ function createAssets(scene) {
     graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
     graphics.generateTexture('smiley', tileSize, tileSize);
+    // Mustache Smiley - Improved Version with arc instead of quadraticCurveTo
+graphics.clear();
 
-    // Mustache Smiley (Player 2) with improved face and mustache
-    graphics.clear();
-    graphics.fillStyle(0xffff00, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.lineStyle(4, 0x000000);
+// Yellow face
+graphics.fillStyle(0xffff00, 1); // Bright yellow
+graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8); // Centered circle, slightly inset
+
+// Eyes with highlights
+graphics.fillStyle(0x000000, 1); // Black
+graphics.fillCircle(tileSize / 4, tileSize / 3, 8); // Left eye
+graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8); // Right eye
+graphics.fillStyle(0xffffff, 1); // White
+graphics.fillCircle(tileSize / 4 + 2, tileSize / 3 - 2, 2); // Left highlight
+graphics.fillCircle(3 * tileSize / 4 + 2, tileSize / 3 - 2, 2); // Right highlight
+
+// Eyebrows
+graphics.lineStyle(4, 0x000000, 1); // Thick black lines
+graphics.beginPath();
+graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false); // Left eyebrow
+graphics.strokePath();
+graphics.beginPath();
+graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false); // Right eyebrow
+graphics.strokePath();
+
+// Nose
+graphics.lineStyle(2, 0x000000, 1); // Thin black line
+graphics.beginPath();
+graphics.arc(tileSize / 2, tileSize / 2 - 5, 5, Math.PI, 0, true); // Small downward arc
+graphics.strokePath();
+
+// Mouth
+graphics.lineStyle(6, 0x000000, 1); // Bold black smile
+graphics.beginPath();
+graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true); // Wide grin
+graphics.strokePath();
+
+// Mustache (using arc for curved effect)
+graphics.lineStyle(2, 0x000000, 1); // Thin black lines
+for (let i = 0; i < 3; i++) {
+    // Left side arcs
     graphics.beginPath();
-    graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+    graphics.moveTo(tileSize / 2 - 5 - i * 5, tileSize / 2 + 5); // Start near center
+    graphics.arc(
+        tileSize / 2 - 15 - i * 5, tileSize / 2 + 15, // Center of arc
+        10, // Radius
+        Math.PI, 0, false // Start at 180°, sweep to 0° (rightward curve)
+    );
+    graphics.lineTo(tileSize / 2 - 25 - i * 5, tileSize / 2 + 10); // End point
     graphics.strokePath();
+
+    // Right side arcs
     graphics.beginPath();
-    graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
+    graphics.moveTo(tileSize / 2 + 5 + i * 5, tileSize / 2 + 5);
+    graphics.arc(
+        tileSize / 2 + 15 + i * 5, tileSize / 2 + 15,
+        10,
+        Math.PI, 0, false
+    );
+    graphics.lineTo(tileSize / 2 + 25 + i * 5, tileSize / 2 + 10);
     graphics.strokePath();
-    graphics.lineStyle(6, 0x000000);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.lineStyle(2, 0x000000);
-    for (let i = 0; i < 4; i++) {
-        graphics.beginPath();
-        graphics.moveTo(tileSize / 2 - i * 8, 4 * tileSize / 5);
-        graphics.lineTo(tileSize / 2 - i * 8 - 8, 4 * tileSize / 5 + 16);
-        graphics.strokePath();
-        graphics.beginPath();
-        graphics.moveTo(tileSize / 2 + i * 8, 4 * tileSize / 5);
-        graphics.lineTo(tileSize / 2 + i * 8 + 8, 4 * tileSize / 5 + 16);
-        graphics.strokePath();
-    }
+}
+
+    // Generate the texture
     graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
 
     // Mad Face (Enemy) with improved angry expression
@@ -419,6 +452,7 @@ let player1, player2, enemies, doors, chests, miniBoss, boss, keyItem, music;
 let currentRoom = 'startRoom';
 let helpTextVisible = true;
 
+// Game configuration
 const config = {
     type: Phaser.AUTO,
     width: 800,
@@ -435,4 +469,5 @@ const config = {
     backgroundColor: '#2c2c2c'
 };
 
+// Initialize the game
 const game = new Phaser.Game(config);
