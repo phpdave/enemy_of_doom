@@ -5,14 +5,11 @@ class SplashScene extends Phaser.Scene {
     }
 
     preload() {
-        // Load the splash image
         this.load.image('splash', 'enemy_of_doom_splash.jpg');
     }
 
     create() {
-        // Display the splash image centered on the 800x600 canvas
         this.add.image(400, 300, 'splash').setOrigin(0.5);
-        // Wait 3 seconds, then start the MyGame scene
         this.time.delayedCall(3000, () => {
             this.scene.start('MyGame');
         }, [], this);
@@ -36,11 +33,11 @@ class MyGame extends Phaser.Scene {
 
         player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1);
         player1.health = 100;
-        player1.setCollideWorldBounds(true); // Prevent player1 from leaving the canvas
+        player1.setCollideWorldBounds(true);
 
         player2 = this.physics.add.sprite(450, 300, 'mustacheSmiley').setScale(1);
         player2.health = 100;
-        player2.setCollideWorldBounds(true); // Prevent player2 from leaving the canvas
+        player2.setCollideWorldBounds(true);
 
         enemies = this.physics.add.group();
         const enemyPositions = [
@@ -52,7 +49,7 @@ class MyGame extends Phaser.Scene {
             const enemy = enemies.create(pos.x, pos.y, 'madFace').setScale(1);
             enemy.health = 40;
             enemy.setVelocity(0);
-            enemy.setCollideWorldBounds(true); // Already set to prevent enemies from leaving
+            enemy.setCollideWorldBounds(true);
             this.time.addEvent({
                 delay: 2000,
                 callback: () => {
@@ -114,26 +111,35 @@ class MyGame extends Phaser.Scene {
 
         this.time.delayedCall(5000, this.startGame, [], this);
 
-        try {
-            music = this.sound.get('backgroundMusic');
-        } catch (error) {
-            console.error('Failed to load background music:', error);
-            this.add.text(400, 550, 'Background music failed to load.', {
-                fontSize: '16px',
-                fill: '#ffffff',
-                align: 'center'
-            }).setOrigin(0.5);
-        }
-
+        // Audio handling
+        music = this.sound.add('backgroundMusic', { loop: true, volume: 0.5 });
         this.input.once('pointerdown', () => {
-            if (music && !music.isPlaying) {
-                music.play({ loop: true, volume: 0.5 });
+            if (this.sound.context.state === 'suspended') {
+                this.sound.context.resume().then(() => {
+                    console.log('AudioContext resumed');
+                    if (!music.isPlaying) {
+                        music.play();
+                    }
+                }).catch(err => {
+                    console.error('Failed to resume AudioContext:', err);
+                });
+            } else if (!music.isPlaying) {
+                music.play();
             }
         }, this);
 
         this.input.keyboard.once('keydown', () => {
-            if (music && !music.isPlaying) {
-                music.play({ loop: true, volume: 0.5 });
+            if (this.sound.context.state === 'suspended') {
+                this.sound.context.resume().then(() => {
+                    console.log('AudioContext resumed');
+                    if (!music.isPlaying) {
+                        music.play();
+                    }
+                }).catch(err => {
+                    console.error('Failed to resume AudioContext:', err);
+                });
+            } else if (!music.isPlaying) {
+                music.play();
             }
         }, this);
     }
@@ -155,7 +161,6 @@ class MyGame extends Phaser.Scene {
             return;
         }
 
-        // Player 1 movement
         if (player1 && player1.active) {
             player1.setVelocity(0);
             if (this.cursors.left.isDown) player1.setVelocityX(-200);
@@ -164,7 +169,6 @@ class MyGame extends Phaser.Scene {
             if (this.cursors.down.isDown) player1.setVelocityY(200);
         }
 
-        // Player 2 movement
         if (player2 && player2.active) {
             player2.setVelocity(0);
             if (this.keys.w.isDown) player2.setVelocityY(-200);
@@ -173,7 +177,6 @@ class MyGame extends Phaser.Scene {
             if (this.keys.d.isDown) player2.setVelocityX(200);
         }
 
-        // Enemy attack logic
         enemies.getChildren().forEach(enemy => {
             if (player1 && player1.active && Phaser.Math.Distance.Between(enemy.x, enemy.y, player1.x, player1.y) < 20) {
                 this.attackPlayer(enemy, player1);
@@ -183,11 +186,9 @@ class MyGame extends Phaser.Scene {
             }
         });
 
-        // Player attacks
         if (player1 && player1.active && Phaser.Input.Keyboard.JustDown(this.keys.space)) this.attack(player1);
         if (player2 && player2.active && Phaser.Input.Keyboard.JustDown(this.keys.q)) this.attack(player2);
 
-        // Toggle help text
         if (Phaser.Input.Keyboard.JustDown(this.keys.h)) {
             this.helpText.classList.toggle('hidden');
             helpTextVisible = !helpTextVisible;
@@ -196,12 +197,8 @@ class MyGame extends Phaser.Scene {
 
     startGame() {
         this.gameStarted = true;
-        if (this.countdownText) {
-            this.countdownText.destroy();
-        }
-        if (this.countdownBg) {
-            this.countdownBg.destroy();
-        }
+        if (this.countdownText) this.countdownText.destroy();
+        if (this.countdownBg) this.countdownBg.destroy();
     }
 
     changeRoom(player, door) {
@@ -258,7 +255,6 @@ function createAssets(scene) {
     const tileSize = 64;
     const graphics = scene.add.graphics();
 
-    // Smiley (Player 1) with improved face
     graphics.clear();
     graphics.fillStyle(0xffff00, 1);
     graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
@@ -277,72 +273,55 @@ function createAssets(scene) {
     graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
     graphics.strokePath();
     graphics.generateTexture('smiley', tileSize, tileSize);
-    // Mustache Smiley - Improved Version with arc instead of quadraticCurveTo
-graphics.clear();
 
-// Yellow face
-graphics.fillStyle(0xffff00, 1); // Bright yellow
-graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8); // Centered circle, slightly inset
-
-// Eyes with highlights
-graphics.fillStyle(0x000000, 1); // Black
-graphics.fillCircle(tileSize / 4, tileSize / 3, 8); // Left eye
-graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8); // Right eye
-graphics.fillStyle(0xffffff, 1); // White
-graphics.fillCircle(tileSize / 4 + 2, tileSize / 3 - 2, 2); // Left highlight
-graphics.fillCircle(3 * tileSize / 4 + 2, tileSize / 3 - 2, 2); // Right highlight
-
-// Eyebrows
-graphics.lineStyle(4, 0x000000, 1); // Thick black lines
-graphics.beginPath();
-graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false); // Left eyebrow
-graphics.strokePath();
-graphics.beginPath();
-graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false); // Right eyebrow
-graphics.strokePath();
-
-// Nose
-graphics.lineStyle(2, 0x000000, 1); // Thin black line
-graphics.beginPath();
-graphics.arc(tileSize / 2, tileSize / 2 - 5, 5, Math.PI, 0, true); // Small downward arc
-graphics.strokePath();
-
-// Mouth
-graphics.lineStyle(6, 0x000000, 1); // Bold black smile
-graphics.beginPath();
-graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true); // Wide grin
-graphics.strokePath();
-
-// Mustache (using arc for curved effect)
-graphics.lineStyle(2, 0x000000, 1); // Thin black lines
-for (let i = 0; i < 3; i++) {
-    // Left side arcs
+    graphics.clear();
+    graphics.fillStyle(0xffff00, 1);
+    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
+    graphics.fillStyle(0x000000, 1);
+    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
+    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
+    graphics.fillStyle(0xffffff, 1);
+    graphics.fillCircle(tileSize / 4 + 2, tileSize / 3 - 2, 2);
+    graphics.fillCircle(3 * tileSize / 4 + 2, tileSize / 3 - 2, 2);
+    graphics.lineStyle(4, 0x000000, 1);
     graphics.beginPath();
-    graphics.moveTo(tileSize / 2 - 5 - i * 5, tileSize / 2 + 5); // Start near center
-    graphics.arc(
-        tileSize / 2 - 15 - i * 5, tileSize / 2 + 15, // Center of arc
-        10, // Radius
-        Math.PI, 0, false // Start at 180°, sweep to 0° (rightward curve)
-    );
-    graphics.lineTo(tileSize / 2 - 25 - i * 5, tileSize / 2 + 10); // End point
+    graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
     graphics.strokePath();
-
-    // Right side arcs
     graphics.beginPath();
-    graphics.moveTo(tileSize / 2 + 5 + i * 5, tileSize / 2 + 5);
-    graphics.arc(
-        tileSize / 2 + 15 + i * 5, tileSize / 2 + 15,
-        10,
-        Math.PI, 0, false
-    );
-    graphics.lineTo(tileSize / 2 + 25 + i * 5, tileSize / 2 + 10);
+    graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
     graphics.strokePath();
-}
+    graphics.lineStyle(2, 0x000000, 1);
+    graphics.beginPath();
+    graphics.arc(tileSize / 2, tileSize / 2 - 5, 5, Math.PI, 0, true);
+    graphics.strokePath();
+    graphics.lineStyle(6, 0x000000, 1);
+    graphics.beginPath();
+    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
+    graphics.strokePath();
+    graphics.lineStyle(2, 0x000000, 1);
+    for (let i = 0; i < 3; i++) {
+        graphics.beginPath();
+        graphics.moveTo(tileSize / 2 - 5 - i * 5, tileSize / 2 + 5);
+        graphics.arc(
+            tileSize / 2 - 15 - i * 5, tileSize / 2 + 15,
+            10,
+            Math.PI, 0, false
+        );
+        graphics.lineTo(tileSize / 2 - 25 - i * 5, tileSize / 2 + 10);
+        graphics.strokePath();
 
-    // Generate the texture
+        graphics.beginPath();
+        graphics.moveTo(tileSize / 2 + 5 + i * 5, tileSize / 2 + 5);
+        graphics.arc(
+            tileSize / 2 + 15 + i * 5, tileSize / 2 + 15,
+            10,
+            Math.PI, 0, false
+        );
+        graphics.lineTo(tileSize / 2 + 25 + i * 5, tileSize / 2 + 10);
+        graphics.strokePath();
+    }
     graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
 
-    // Mad Face (Enemy) with improved angry expression
     graphics.clear();
     graphics.fillStyle(0xff0000, 1);
     graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
@@ -361,7 +340,6 @@ for (let i = 0; i < 3; i++) {
     graphics.strokePath();
     graphics.generateTexture('madFace', tileSize, tileSize);
 
-    // Mini Boss with added face
     graphics.clear();
     graphics.fillStyle(0xff4500, 1);
     graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
@@ -381,7 +359,6 @@ for (let i = 0; i < 3; i++) {
     graphics.strokePath();
     graphics.generateTexture('miniBoss', tileSize, tileSize);
 
-    // Boss with improved face and details
     graphics.clear();
     graphics.fillStyle(0x8b0000, 1);
     graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
@@ -405,7 +382,6 @@ for (let i = 0; i < 3; i++) {
     graphics.strokePath();
     graphics.generateTexture('boss', tileSize, tileSize);
 
-    // Door
     graphics.clear();
     graphics.fillStyle(0x808080, 1);
     graphics.fillRect(8, 8, tileSize - 16, tileSize - 16);
@@ -413,7 +389,6 @@ for (let i = 0; i < 3; i++) {
     graphics.fillCircle(tileSize / 4, tileSize / 2, 12);
     graphics.generateTexture('door', tileSize, tileSize);
 
-    // Chest
     graphics.clear();
     graphics.fillStyle(0xffd700, 1);
     graphics.fillRect(8, 8, tileSize - 16, tileSize - 16);
@@ -425,14 +400,12 @@ for (let i = 0; i < 3; i++) {
     graphics.strokePath();
     graphics.generateTexture('chest', tileSize, tileSize);
 
-    // Key
     graphics.clear();
     graphics.fillStyle(0x00ff00, 1);
     graphics.fillRect(tileSize / 4, tileSize / 4, tileSize / 2, 8);
     graphics.fillCircle(tileSize / 2, tileSize / 4, 16);
     graphics.generateTexture('key', tileSize, tileSize);
 
-    // Sword
     graphics.clear();
     graphics.fillStyle(0xffffff, 1);
     graphics.fillRect(tileSize / 2 - 8, 8, 16, tileSize / 2);
@@ -440,7 +413,6 @@ for (let i = 0; i < 3; i++) {
     graphics.fillRect(tileSize / 2 - 8, tileSize / 2 + 16, 16, tileSize / 4);
     graphics.generateTexture('sword', tileSize, tileSize);
 
-    // Tiles
     graphics.clear();
     graphics.fillStyle(0x666666, 1);
     graphics.fillRect(0, 0, tileSize, tileSize);
@@ -452,7 +424,6 @@ let player1, player2, enemies, doors, chests, miniBoss, boss, keyItem, music;
 let currentRoom = 'startRoom';
 let helpTextVisible = true;
 
-// Game configuration
 const config = {
     type: Phaser.AUTO,
     width: 800,
@@ -464,10 +435,9 @@ const config = {
             debug: false
         }
     },
-    scene: [SplashScene, MyGame], // Start with SplashScene
+    scene: [SplashScene, MyGame],
     parent: 'game-container',
     backgroundColor: '#2c2c2c'
 };
 
-// Initialize the game
 const game = new Phaser.Game(config);
