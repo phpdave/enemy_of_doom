@@ -22,11 +22,13 @@ class MyGame extends Phaser.Scene {
     }
 
     preload() {
-        // Load assets (skip smiley generation for Player 1)
-        createAssets(this, false);
+        // Load assets (skip smiley and mustacheSmiley generation)
+        createAssets(this, false, false); // Pass false for both smiley and mustacheSmiley
         this.load.audio('backgroundMusic', 'assets/backgroundMusic.mp3');
-        // Load the spritesheet for Player 1 (using dude.png as a fallback)
+        // Load the spritesheet for Player 1 (using dude.png)
         this.load.spritesheet('smiley', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
+        // Load the spritesheet for Player 2 (using dude_cyberpunk.png)
+        this.load.spritesheet('cyberpunk', 'assets/dude_cyberpunk.png', { frameWidth: 32, frameHeight: 48 });
     }
 
     create() {
@@ -35,15 +37,15 @@ class MyGame extends Phaser.Scene {
         this.gameStarted = false;
 
         // Player 1 with animation
-        player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1.5); // Adjusted scale for 48x48 frames
+        player1 = this.physics.add.sprite(400, 300, 'smiley').setScale(1.5);
         player1.health = 100;
         player1.setCollideWorldBounds(true);
 
         // Define animations for Player 1 (using dude.png frame ranges)
-        const frames = this.anims.generateFrameNumbers('smiley');
-        console.log('Number of frames in smiley:', frames.length);
+        const frames1 = this.anims.generateFrameNumbers('smiley');
+        console.log('Number of frames in smiley:', frames1.length);
 
-        if (frames.length > 0) {
+        if (frames1.length > 0) {
             this.anims.create({
                 key: 'left',
                 frames: this.anims.generateFrameNumbers('smiley', { start: 0, end: 3 }),
@@ -63,13 +65,40 @@ class MyGame extends Phaser.Scene {
             });
         } else {
             console.error('No frames found in smiley spritesheet. Using static sprite.');
-            // Fallback to static sprite if animation fails
-            player1.setTexture('smiley', 0); // Use first frame as static
+            player1.setTexture('smiley', 0);
         }
 
-        player2 = this.physics.add.sprite(450, 300, 'mustacheSmiley').setScale(1);
+        // Player 2 with animation
+        player2 = this.physics.add.sprite(450, 300, 'cyberpunk').setScale(1.5);
         player2.health = 100;
         player2.setCollideWorldBounds(true);
+
+        // Define animations for Player 2 (using dude_cyberpunk.png frame ranges)
+        const frames2 = this.anims.generateFrameNumbers('cyberpunk');
+        console.log('Number of frames in cyberpunk:', frames2.length);
+
+        if (frames2.length > 0) {
+            this.anims.create({
+                key: 'cyberpunk-left',
+                frames: this.anims.generateFrameNumbers('cyberpunk', { start: 0, end: 3 }),
+                frameRate: 10,
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'cyberpunk-right',
+                frames: this.anims.generateFrameNumbers('cyberpunk', { start: 5, end: 8 }),
+                frameRate: 10,
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'cyberpunk-idle',
+                frames: [ { key: 'cyberpunk', frame: 4 } ],
+                frameRate: 20
+            });
+        } else {
+            console.error('No frames found in cyberpunk spritesheet. Using static sprite.');
+            player2.setTexture('cyberpunk', 0);
+        }
 
         enemies = this.physics.add.group();
         const enemyPositions = [
@@ -190,29 +219,40 @@ class MyGame extends Phaser.Scene {
 
             if (this.cursors.left.isDown) {
                 player1.setVelocityX(-200);
-                if (player1.anims) player1.anims.play('left', true); // Check if anims exists
+                if (player1.anims) player1.anims.play('left', true);
             } else if (this.cursors.right.isDown) {
                 player1.setVelocityX(200);
                 if (player1.anims) player1.anims.play('right', true);
             } else if (this.cursors.up.isDown) {
                 player1.setVelocityY(-200);
-                // No 'up' animation in dude.png, so use idle or skip
                 if (player1.anims) player1.anims.play('idle', true);
             } else if (this.cursors.down.isDown) {
                 player1.setVelocityY(200);
-                // No 'down' animation in dude.png, so use idle or skip
                 if (player1.anims) player1.anims.play('idle', true);
             } else {
                 if (player1.anims) player1.anims.play('idle', true);
             }
         }
 
+        // Player 2 movement with animation
         if (player2 && player2.active) {
             player2.setVelocity(0);
-            if (this.keys.w.isDown) player2.setVelocityY(-200);
-            if (this.keys.s.isDown) player2.setVelocityY(200);
-            if (this.keys.a.isDown) player2.setVelocityX(-200);
-            if (this.keys.d.isDown) player2.setVelocityX(200);
+
+            if (this.keys.a.isDown) {
+                player2.setVelocityX(-200);
+                if (player2.anims) player2.anims.play('cyberpunk-left', true);
+            } else if (this.keys.d.isDown) {
+                player2.setVelocityX(200);
+                if (player2.anims) player2.anims.play('cyberpunk-right', true);
+            } else if (this.keys.w.isDown) {
+                player2.setVelocityY(-200);
+                if (player2.anims) player2.anims.play('cyberpunk-idle', true);
+            } else if (this.keys.s.isDown) {
+                player2.setVelocityY(200);
+                if (player2.anims) player2.anims.play('cyberpunk-idle', true);
+            } else {
+                if (player2.anims) player2.anims.play('cyberpunk-idle', true);
+            }
         }
 
         enemies.getChildren().forEach(enemy => {
@@ -289,7 +329,7 @@ class MyGame extends Phaser.Scene {
     }
 }
 
-function createAssets(scene, includeSmiley = true) {
+function createAssets(scene, includeSmiley = true, includeMustacheSmiley = true) {
     const tileSize = 64;
     const graphics = scene.add.graphics();
 
@@ -314,44 +354,46 @@ function createAssets(scene, includeSmiley = true) {
         graphics.generateTexture('smiley', tileSize, tileSize);
     }
 
-    graphics.clear();
-    graphics.fillStyle(0xffff00, 1);
-    graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
-    graphics.fillStyle(0x000000, 1);
-    graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
-    graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillCircle(tileSize / 4 + 2, tileSize / 3 - 2, 2);
-    graphics.fillCircle(3 * tileSize / 4 + 2, tileSize / 3 - 2, 2);
-    graphics.lineStyle(4, 0x000000, 1);
-    graphics.beginPath();
-    graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
-    graphics.strokePath();
-    graphics.beginPath();
-    graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
-    graphics.strokePath();
-    graphics.lineStyle(2, 0x000000, 1);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, tileSize / 2 - 5, 5, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.lineStyle(6, 0x000000, 1);
-    graphics.beginPath();
-    graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
-    graphics.strokePath();
-    graphics.lineStyle(2, 0x000000, 1);
-    for (let i = 0; i < 3; i++) {
+    if (includeMustacheSmiley) {
+        graphics.clear();
+        graphics.fillStyle(0xffff00, 1);
+        graphics.fillCircle(tileSize / 2, tileSize / 2, tileSize / 2 - 8);
+        graphics.fillStyle(0x000000, 1);
+        graphics.fillCircle(tileSize / 4, tileSize / 3, 8);
+        graphics.fillCircle(3 * tileSize / 4, tileSize / 3, 8);
+        graphics.fillStyle(0xffffff, 1);
+        graphics.fillCircle(tileSize / 4 + 2, tileSize / 3 - 2, 2);
+        graphics.fillCircle(3 * tileSize / 4 + 2, tileSize / 3 - 2, 2);
+        graphics.lineStyle(4, 0x000000, 1);
         graphics.beginPath();
-        graphics.moveTo(tileSize / 2 - 5 - i * 5, tileSize / 2 + 5);
-        graphics.arc(tileSize / 2 - 15 - i * 5, tileSize / 2 + 15, 10, Math.PI, 0, false);
-        graphics.lineTo(tileSize / 2 - 25 - i * 5, tileSize / 2 + 10);
+        graphics.arc(tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
         graphics.strokePath();
         graphics.beginPath();
-        graphics.moveTo(tileSize / 2 + 5 + i * 5, tileSize / 2 + 5);
-        graphics.arc(tileSize / 2 + 15 + i * 5, tileSize / 2 + 15, 10, Math.PI, 0, false);
-        graphics.lineTo(tileSize / 2 + 25 + i * 5, tileSize / 2 + 10);
+        graphics.arc(3 * tileSize / 4, tileSize / 3 - 10, 10, 0, Math.PI, false);
         graphics.strokePath();
+        graphics.lineStyle(2, 0x000000, 1);
+        graphics.beginPath();
+        graphics.arc(tileSize / 2, tileSize / 2 - 5, 5, Math.PI, 0, true);
+        graphics.strokePath();
+        graphics.lineStyle(6, 0x000000, 1);
+        graphics.beginPath();
+        graphics.arc(tileSize / 2, 2 * tileSize / 3, tileSize / 4, Math.PI, 0, true);
+        graphics.strokePath();
+        graphics.lineStyle(2, 0x000000, 1);
+        for (let i = 0; i < 3; i++) {
+            graphics.beginPath();
+            graphics.moveTo(tileSize / 2 - 5 - i * 5, tileSize / 2 + 5);
+            graphics.arc(tileSize / 2 - 15 - i * 5, tileSize / 2 + 15, 10, Math.PI, 0, false);
+            graphics.lineTo(tileSize / 2 - 25 - i * 5, tileSize / 2 + 10);
+            graphics.strokePath();
+            graphics.beginPath();
+            graphics.moveTo(tileSize / 2 + 5 + i * 5, tileSize / 2 + 5);
+            graphics.arc(tileSize / 2 + 15 + i * 5, tileSize / 2 + 15, 10, Math.PI, 0, false);
+            graphics.lineTo(tileSize / 2 + 25 + i * 5, tileSize / 2 + 10);
+            graphics.strokePath();
+        }
+        graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
     }
-    graphics.generateTexture('mustacheSmiley', tileSize, tileSize);
 
     graphics.clear();
     graphics.fillStyle(0xff0000, 1);
