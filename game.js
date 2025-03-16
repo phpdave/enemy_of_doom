@@ -350,7 +350,7 @@ class MyGame extends Phaser.Scene {
         // Adjust attack angle based on last direction
         switch (lastDir) {
             case 'left':
-                attackAngle = 180;
+                attackAngle = 90;  // Changed from 180 to 90 to swing vertically on left side
                 startAngle = -45;  // Start from northeast
                 endAngle = 45;     // End at southeast
                 handleOffsetX = handleDistance;  // Handle on right side when facing left
@@ -362,7 +362,7 @@ class MyGame extends Phaser.Scene {
                 handleOffsetX = -handleDistance; // Handle on left side when facing right
                 break;
             case 'up':
-                attackAngle = -90;
+                attackAngle = 0;   // Changed from -90 to 0 to swing horizontally above
                 startAngle = -45;  // Start from northwest
                 endAngle = 45;     // End at northeast
                 handleOffsetY = handleDistance;  // Handle below when facing up
