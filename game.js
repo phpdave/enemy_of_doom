@@ -31,8 +31,10 @@ class MyGame extends Phaser.Scene {
         this.load.spritesheet('cyberpunk', 'assets/dude_cyberpunk.png', { frameWidth: 32, frameHeight: 48 });
         // Load the enemy spritesheet
         this.load.spritesheet('enemy', 'assets/enemy.png', { frameWidth: 48, frameHeight: 48 });
-        // Load sword swing sound effect
-        this.load.audio('swoosh', 'https://labs.phaser.io/assets/audio/sword.wav');
+        // Load sword swing sound effect (local file)
+        this.load.audio('swoosh', 'assets/swoosh.mp3');
+        // Load effect sprite
+        this.load.image('effect', 'assets/effect.png');
     }
 
     create() {
@@ -316,16 +318,30 @@ class MyGame extends Phaser.Scene {
         // Set the pivot point for rotation
         sword.setOrigin(0.5, 1);
         
-        // Add a trail effect
-        const particles = scene.add.particles('sword');
-        const emitter = particles.createEmitter({
-            speed: 20,
-            scale: { start: 0.2, end: 0 },
-            alpha: { start: 0.5, end: 0 },
-            lifespan: 200,
-            blendMode: 'ADD'
-        });
-        emitter.startFollow(sword);
+        // Create flash effects using sprites instead of particles
+        const createFlashEffect = (x, y) => {
+            const flash = scene.add.sprite(x, y, 'effect')
+                .setScale(0.5)
+                .setAlpha(0.6)
+                .setTint(0xFFFFFF);
+            
+            scene.tweens.add({
+                targets: flash,
+                alpha: 0,
+                scale: 1.5,
+                duration: 200,
+                onComplete: () => flash.destroy()
+            });
+        };
+        
+        // Add multiple flash effects around the sword
+        for (let i = 0; i < 3; i++) {
+            const angle = i * Math.PI / 2;
+            createFlashEffect(
+                sword.x + Math.cos(angle) * 20,
+                sword.y + Math.sin(angle) * 20
+            );
+        }
         
         // Create a more dynamic swing animation
         scene.tweens.add({
@@ -348,7 +364,7 @@ class MyGame extends Phaser.Scene {
                             enemy.health = (enemy.health || 40) - 20;
                             
                             // Add hit effect
-                            const flash = scene.add.sprite(enemy.x, enemy.y, 'sword')
+                            const flash = scene.add.sprite(enemy.x, enemy.y, 'effect')
                                 .setScale(0.5)
                                 .setTint(0xff0000)
                                 .setAlpha(0.6);
@@ -404,7 +420,6 @@ class MyGame extends Phaser.Scene {
             onComplete: () => {
                 // Clean up
                 sword.destroy();
-                particles.destroy();
                 // Reset hit flags
                 enemies.getChildren().forEach(enemy => {
                     enemy.isHit = false;
@@ -413,15 +428,8 @@ class MyGame extends Phaser.Scene {
         });
 
         // Add swing sound effect
-        if (scene.sound.locked) {
-            scene.sound.once('unlocked', () => {
-                const swoosh = scene.sound.add('swoosh', { volume: 0.5 });
-                swoosh.play();
-            });
-        } else {
-            const swoosh = scene.sound.add('swoosh', { volume: 0.5 });
-            swoosh.play();
-        }
+        const swoosh = scene.sound.add('swoosh', { volume: 0.5 });
+        swoosh.play();
     }
 
     attackPlayer(enemy, player) {
