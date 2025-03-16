@@ -350,28 +350,28 @@ class MyGame extends Phaser.Scene {
         // Adjust attack angle based on last direction
         switch (lastDir) {
             case 'left':
-                attackAngle = 90;  // Changed from 180 to 90 to swing vertically on left side
-                startAngle = -45;  // Start from northeast
-                endAngle = 45;     // End at southeast
-                handleOffsetX = handleDistance;  // Handle on right side when facing left
+                attackAngle = 180;    // Face left
+                startAngle = -45;     // Start from northeast
+                endAngle = 45;        // End at southeast
+                handleOffsetX = -handleDistance;  // Handle on left side
                 break;
             case 'right':
-                attackAngle = 0;
-                startAngle = -45;  // Start from northwest
-                endAngle = 45;     // End at southeast
-                handleOffsetX = -handleDistance; // Handle on left side when facing right
+                attackAngle = 0;      // Face right
+                startAngle = -45;     // Start from northwest
+                endAngle = 45;        // End at southeast
+                handleOffsetX = handleDistance;   // Handle on right side
                 break;
             case 'up':
-                attackAngle = 0;   // Changed from -90 to 0 to swing horizontally above
-                startAngle = -45;  // Start from northwest
-                endAngle = 45;     // End at northeast
-                handleOffsetY = handleDistance;  // Handle below when facing up
+                attackAngle = -90;    // Face up
+                startAngle = -45;     // Start from northwest
+                endAngle = 45;        // End at northeast
+                handleOffsetY = -handleDistance * 1.5;  // Handle slightly higher up
                 break;
             case 'down':
-                attackAngle = 90;
-                startAngle = -45;  // Start from southwest
-                endAngle = 45;     // End at southeast
-                handleOffsetY = -handleDistance; // Handle above when facing down
+                attackAngle = 90;     // Face down
+                startAngle = -45;     // Start from southwest
+                endAngle = 45;        // End at southeast
+                handleOffsetY = handleDistance;   // Handle below character
                 break;
         }
         
@@ -383,7 +383,7 @@ class MyGame extends Phaser.Scene {
         ).setScale(0.7);
         
         sword.setDepth(1);
-        sword.setOrigin(0.5, 0.8); // Origin near handle end
+        sword.setOrigin(0.5, 0.9);  // Moved origin point closer to handle end for better rotation
         sword.angle = attackAngle + startAngle;
         
         // Create trail effect
