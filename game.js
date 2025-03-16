@@ -339,43 +339,51 @@ class MyGame extends Phaser.Scene {
         // Get the last direction for the player
         const lastDir = player === player1 ? this.lastDirection.player1 : this.lastDirection.player2;
         
-        // Set base attack angles based on direction
+        // Set base attack angles and handle position
         let attackAngle = 0;
         let startAngle = 0;
         let endAngle = 0;
+        let handleOffsetX = 0;
+        let handleOffsetY = 0;
+        const handleDistance = 15; // Distance of handle from player
         
         // Adjust attack angle based on last direction
         switch (lastDir) {
             case 'left':
                 attackAngle = 180;
-                startAngle = -45;  // Start from northeast when facing left
+                startAngle = -45;  // Start from northeast
                 endAngle = 45;     // End at southeast
+                handleOffsetX = handleDistance;  // Handle on right side when facing left
                 break;
             case 'right':
                 attackAngle = 0;
-                startAngle = 45;   // Start from northwest
-                endAngle = -45;    // End at southwest
+                startAngle = -45;  // Start from northwest
+                endAngle = 45;     // End at southeast
+                handleOffsetX = -handleDistance; // Handle on left side when facing right
                 break;
             case 'up':
                 attackAngle = -90;
-                startAngle = -45;  // Start from southeast
-                endAngle = 45;     // End at southwest
+                startAngle = -45;  // Start from northwest
+                endAngle = 45;     // End at northeast
+                handleOffsetY = handleDistance;  // Handle below when facing up
                 break;
             case 'down':
                 attackAngle = 90;
-                startAngle = 45;   // Start from northeast
-                endAngle = -45;    // End at northwest
+                startAngle = -45;  // Start from southwest
+                endAngle = 45;     // End at southeast
+                handleOffsetY = -handleDistance; // Handle above when facing down
                 break;
         }
         
-        // Create sword with offset based on direction
-        const swordOffset = 25;  // Slightly increased offset for better visibility
-        const offsetX = Math.cos((attackAngle + startAngle) * Math.PI / 180) * swordOffset;
-        const offsetY = Math.sin((attackAngle + startAngle) * Math.PI / 180) * swordOffset;
+        // Create sword at handle position
+        const sword = scene.physics.add.sprite(
+            player.x + handleOffsetX,
+            player.y + handleOffsetY,
+            'sword'
+        ).setScale(0.7);
         
-        const sword = scene.physics.add.sprite(player.x + offsetX, player.y + offsetY, 'sword').setScale(0.7);
         sword.setDepth(1);
-        sword.setOrigin(0.5, 0.8);  // Adjusted origin for better rotation
+        sword.setOrigin(0.5, 0.8); // Origin near handle end
         sword.angle = attackAngle + startAngle;
         
         // Create trail effect
@@ -412,15 +420,13 @@ class MyGame extends Phaser.Scene {
             });
         };
         
-        // Create initial flash effects aligned with swing direction
+        // Create initial flash effects
         for (let i = 0; i < 2; i++) {
             const flashAngle = attackAngle + startAngle + (i * 30);
-            const flashDist = 20;
-            createFlashEffect(
-                player.x + Math.cos(flashAngle * Math.PI / 180) * flashDist,
-                player.y + Math.sin(flashAngle * Math.PI / 180) * flashDist,
-                flashAngle
-            );
+            const flashDist = 25;
+            const flashX = player.x + handleOffsetX + Math.cos(flashAngle * Math.PI / 180) * flashDist;
+            const flashY = player.y + handleOffsetY + Math.sin(flashAngle * Math.PI / 180) * flashDist;
+            createFlashEffect(flashX, flashY, flashAngle);
         }
         
         // Create a more dynamic swing animation
@@ -436,20 +442,27 @@ class MyGame extends Phaser.Scene {
                 const swingProgress = tween.progress;
                 const currentAngle = attackAngle + (startAngle + (endAngle - startAngle) * swingProgress);
                 
-                // Calculate position to maintain consistent distance during swing
-                const currentOffset = swordOffset * (1 + swingProgress * 0.2);
-                sword.x = player.x + Math.cos(currentAngle * Math.PI / 180) * currentOffset;
-                sword.y = player.y + Math.sin(currentAngle * Math.PI / 180) * currentOffset;
+                // Keep sword handle at fixed position relative to player
+                sword.x = player.x + handleOffsetX;
+                sword.y = player.y + handleOffsetY;
                 
                 // Create trail effect aligned with swing
-                if (swingProgress - progress > 0.15) {  // Increased frequency of trail effects
+                if (swingProgress - progress > 0.15) {
                     progress = swingProgress;
-                    createTrailEffect(sword.x, sword.y, currentAngle);
+                    // Calculate trail position at sword tip
+                    const tipDistance = 30;
+                    const trailX = sword.x + Math.cos(currentAngle * Math.PI / 180) * tipDistance;
+                    const trailY = sword.y + Math.sin(currentAngle * Math.PI / 180) * tipDistance;
+                    createTrailEffect(trailX, trailY, currentAngle);
                 }
                 
                 // Check for enemy hits during the swing
                 enemies.getChildren().forEach(enemy => {
-                    if (Phaser.Math.Distance.Between(sword.x, sword.y, enemy.x, enemy.y) < 40) { // Reduced hit distance
+                    // Calculate sword tip position for hit detection
+                    const tipX = sword.x + Math.cos(currentAngle * Math.PI / 180) * 35;
+                    const tipY = sword.y + Math.sin(currentAngle * Math.PI / 180) * 35;
+                    
+                    if (Phaser.Math.Distance.Between(tipX, tipY, enemy.x, enemy.y) < 30) {
                         if (!enemy.isHit) {
                             enemy.isHit = true;
                             enemy.health = (enemy.health || 40) - 20;
