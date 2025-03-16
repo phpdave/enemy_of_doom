@@ -31,6 +31,8 @@ class MyGame extends Phaser.Scene {
         this.load.spritesheet('cyberpunk', 'assets/dude_cyberpunk.png', { frameWidth: 32, frameHeight: 48 });
         // Load the enemy spritesheet
         this.load.spritesheet('enemy', 'assets/enemy.png', { frameWidth: 48, frameHeight: 48 });
+        // Load sword swing sound effect
+        this.load.audio('swoosh', 'https://labs.phaser.io/assets/audio/sword.wav');
     }
 
     create() {
@@ -306,32 +308,120 @@ class MyGame extends Phaser.Scene {
     attack(player) {
         if (!this.gameStarted) return;
         const scene = this;
+        
+        // Create sword with offset from player
         const sword = scene.physics.add.sprite(player.x, player.y, 'sword').setScale(1);
+        sword.setDepth(1); // Ensure sword appears above other sprites
+        
+        // Set the pivot point for rotation
+        sword.setOrigin(0.5, 1);
+        
+        // Add a trail effect
+        const particles = scene.add.particles('sword');
+        const emitter = particles.createEmitter({
+            speed: 20,
+            scale: { start: 0.2, end: 0 },
+            alpha: { start: 0.5, end: 0 },
+            lifespan: 200,
+            blendMode: 'ADD'
+        });
+        emitter.startFollow(sword);
+        
+        // Create a more dynamic swing animation
         scene.tweens.add({
             targets: sword,
-            angle: 360,
+            angle: { from: -45, to: 135 }, // Wider swing arc
+            scaleX: { from: 1, to: 1.5 }, // Stretch effect during swing
+            scaleY: { from: 1, to: 1.2 },
             duration: 300,
-            onComplete: () => sword.destroy()
-        });
-
-        enemies.getChildren().forEach(enemy => {
-            if (Phaser.Math.Distance.Between(player.x, player.y, enemy.x, enemy.y) < 50) {
-                enemy.health = (enemy.health || 40) - 20;
-                if (enemy.health <= 0) enemy.destroy();
+            ease: 'Power1',
+            onUpdate: () => {
+                // Update sword position to follow player during swing
+                sword.x = player.x;
+                sword.y = player.y;
                 
-                const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
-                    fontSize: '16px',
-                    fill: '#FF0000'
+                // Check for enemy hits during the swing
+                enemies.getChildren().forEach(enemy => {
+                    if (Phaser.Math.Distance.Between(sword.x, sword.y, enemy.x, enemy.y) < 50) {
+                        if (!enemy.isHit) { // Prevent multiple hits in the same swing
+                            enemy.isHit = true;
+                            enemy.health = (enemy.health || 40) - 20;
+                            
+                            // Add hit effect
+                            const flash = scene.add.sprite(enemy.x, enemy.y, 'sword')
+                                .setScale(0.5)
+                                .setTint(0xff0000)
+                                .setAlpha(0.6);
+                            
+                            scene.tweens.add({
+                                targets: flash,
+                                alpha: 0,
+                                scale: 1.5,
+                                duration: 200,
+                                onComplete: () => flash.destroy()
+                            });
+
+                            // Damage text with improved animation
+                            const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
+                                fontSize: '20px',
+                                fill: '#FF0000',
+                                stroke: '#000000',
+                                strokeThickness: 4
+                            }).setOrigin(0.5);
+                            
+                            scene.tweens.add({
+                                targets: damageText,
+                                y: damageText.y - 40,
+                                alpha: 0,
+                                scale: 1.5,
+                                duration: 800,
+                                ease: 'Power2',
+                                onComplete: () => damageText.destroy()
+                            });
+
+                            // Knockback effect
+                            const angle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
+                            enemy.setVelocity(
+                                Math.cos(angle) * 200,
+                                Math.sin(angle) * 200
+                            );
+                            
+                            // Check for enemy death
+                            if (enemy.health <= 0) {
+                                // Death animation
+                                scene.tweens.add({
+                                    targets: enemy,
+                                    alpha: 0,
+                                    scale: 1.5,
+                                    duration: 300,
+                                    onComplete: () => enemy.destroy()
+                                });
+                            }
+                        }
+                    }
                 });
-                scene.tweens.add({
-                    targets: damageText,
-                    y: damageText.y - 30,
-                    alpha: 0,
-                    duration: 1000,
-                    onComplete: () => damageText.destroy()
+            },
+            onComplete: () => {
+                // Clean up
+                sword.destroy();
+                particles.destroy();
+                // Reset hit flags
+                enemies.getChildren().forEach(enemy => {
+                    enemy.isHit = false;
                 });
             }
         });
+
+        // Add swing sound effect
+        if (scene.sound.locked) {
+            scene.sound.once('unlocked', () => {
+                const swoosh = scene.sound.add('swoosh', { volume: 0.5 });
+                swoosh.play();
+            });
+        } else {
+            const swoosh = scene.sound.add('swoosh', { volume: 0.5 });
+            swoosh.play();
+        }
     }
 
     attackPlayer(enemy, player) {
