@@ -30,19 +30,19 @@ def create_swoosh_sound():
     noise_env = np.exp(-t * 25)  # Quick noise decay
     wave += noise * noise_env
     
-    # Normalize and apply soft clipping for better sound
-    wave = np.tanh(wave * 1.5)  # Soft clipping
-    wave = wave / np.max(np.abs(wave))  # Normalize
-    
-    # Convert to 16-bit PCM
-    wave = np.int16(wave * 32767)
-    
     # Add a small fade in/out to prevent clicks
     fade_samples = int(0.005 * sample_rate)  # 5ms fade
     fade_in = np.linspace(0, 1, fade_samples)
     fade_out = np.linspace(1, 0, fade_samples)
     wave[:fade_samples] *= fade_in
     wave[-fade_samples:] *= fade_out
+    
+    # Normalize and apply soft clipping for better sound
+    wave = np.tanh(wave * 1.5)  # Soft clipping
+    wave = wave / np.max(np.abs(wave))  # Normalize
+    
+    # Convert to 16-bit PCM
+    wave = np.int16(wave * 32767)
     
     # Save as WAV file
     try:
