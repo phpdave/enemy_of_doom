@@ -29,6 +29,8 @@ class MyGame extends Phaser.Scene {
         this.load.spritesheet('smiley', 'assets/dude.png', { frameWidth: 32, frameHeight: 48 });
         // Load the spritesheet for Player 2 (using dude_cyberpunk.png)
         this.load.spritesheet('cyberpunk', 'assets/dude_cyberpunk.png', { frameWidth: 32, frameHeight: 48 });
+        // Load the enemy spritesheet
+        this.load.spritesheet('enemy', 'assets/enemy.png', { frameWidth: 48, frameHeight: 48 });
     }
 
     create() {
@@ -106,11 +108,21 @@ class MyGame extends Phaser.Scene {
             { x: 500, y: 400 },
             { x: 600, y: 250 }
         ];
+
+        // Create enemy animations
+        this.anims.create({
+            key: 'enemy-idle',
+            frames: this.anims.generateFrameNumbers('enemy', { start: 0, end: 5 }),
+            frameRate: 8,
+            repeat: -1
+        });
+
         enemyPositions.forEach(pos => {
-            const enemy = enemies.create(pos.x, pos.y, 'madFace').setScale(1);
+            const enemy = enemies.create(pos.x, pos.y, 'enemy').setScale(1);
             enemy.health = 40;
             enemy.setVelocity(0);
             enemy.setCollideWorldBounds(true);
+            enemy.anims.play('enemy-idle', true);
             this.time.addEvent({
                 delay: 2000,
                 callback: () => {
