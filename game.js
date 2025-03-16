@@ -19,6 +19,11 @@ class SplashScene extends Phaser.Scene {
 class MyGame extends Phaser.Scene {
     constructor() {
         super('MyGame');
+        // Add last direction tracking
+        this.lastDirection = {
+            player1: 'right',
+            player2: 'right'
+        };
     }
 
     preload() {
@@ -241,43 +246,51 @@ class MyGame extends Phaser.Scene {
             return;
         }
 
-        // Player 1 movement with animation
+        // Player 1 movement with animation and direction tracking
         if (player1 && player1.active) {
             player1.setVelocity(0);
 
             if (this.cursors.left.isDown) {
                 player1.setVelocityX(-200);
                 if (player1.anims) player1.anims.play('left', true);
+                this.lastDirection.player1 = 'left';
             } else if (this.cursors.right.isDown) {
                 player1.setVelocityX(200);
                 if (player1.anims) player1.anims.play('right', true);
+                this.lastDirection.player1 = 'right';
             } else if (this.cursors.up.isDown) {
                 player1.setVelocityY(-200);
                 if (player1.anims) player1.anims.play('idle', true);
+                this.lastDirection.player1 = 'up';
             } else if (this.cursors.down.isDown) {
                 player1.setVelocityY(200);
                 if (player1.anims) player1.anims.play('idle', true);
+                this.lastDirection.player1 = 'down';
             } else {
                 if (player1.anims) player1.anims.play('idle', true);
             }
         }
 
-        // Player 2 movement with animation
+        // Player 2 movement with animation and direction tracking
         if (player2 && player2.active) {
             player2.setVelocity(0);
 
             if (this.keys.a.isDown) {
                 player2.setVelocityX(-200);
                 if (player2.anims) player2.anims.play('cyberpunk-left', true);
+                this.lastDirection.player2 = 'left';
             } else if (this.keys.d.isDown) {
                 player2.setVelocityX(200);
                 if (player2.anims) player2.anims.play('cyberpunk-right', true);
+                this.lastDirection.player2 = 'right';
             } else if (this.keys.w.isDown) {
                 player2.setVelocityY(-200);
                 if (player2.anims) player2.anims.play('cyberpunk-idle', true);
+                this.lastDirection.player2 = 'up';
             } else if (this.keys.s.isDown) {
                 player2.setVelocityY(200);
                 if (player2.anims) player2.anims.play('cyberpunk-idle', true);
+                this.lastDirection.player2 = 'down';
             } else {
                 if (player2.anims) player2.anims.play('cyberpunk-idle', true);
             }
@@ -323,85 +336,52 @@ class MyGame extends Phaser.Scene {
         if (!this.gameStarted) return;
         const scene = this;
         
-        // Determine attack direction based on last movement or facing direction
+        // Get the last direction for the player
+        const lastDir = player === player1 ? this.lastDirection.player1 : this.lastDirection.player2;
+        
+        // Set base attack angles
         let attackAngle = 0;
         let startAngle = -45;
-        let endAngle = 45;  // Reduced swing arc
+        let endAngle = 45;
         
-        if (player === player1) {
-            if (this.cursors.left.isDown) {
+        // Adjust attack angle based on last direction
+        switch (lastDir) {
+            case 'left':
                 attackAngle = 180;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (this.cursors.right.isDown) {
+                startAngle = -30;
+                endAngle = 30;
+                break;
+            case 'right':
                 attackAngle = 0;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (this.cursors.up.isDown) {
+                startAngle = -30;
+                endAngle = 30;
+                break;
+            case 'up':
                 attackAngle = -90;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (this.cursors.down.isDown) {
+                startAngle = -30;
+                endAngle = 30;
+                break;
+            case 'down':
                 attackAngle = 90;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (player.anims.currentAnim) {
-                // Use the current animation to determine direction
-                if (player.anims.currentAnim.key === 'left') {
-                    attackAngle = 180;
-                    startAngle = -45;
-                    endAngle = 45;
-                } else if (player.anims.currentAnim.key === 'right') {
-                    attackAngle = 0;
-                    startAngle = -45;
-                    endAngle = 45;
-                }
-            }
-        } else if (player === player2) {
-            if (this.keys.a.isDown) {
-                attackAngle = 180;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (this.keys.d.isDown) {
-                attackAngle = 0;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (this.keys.w.isDown) {
-                attackAngle = -90;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (this.keys.s.isDown) {
-                attackAngle = 90;
-                startAngle = -45;
-                endAngle = 45;
-            } else if (player.anims.currentAnim) {
-                // Use the current animation to determine direction
-                if (player.anims.currentAnim.key === 'cyberpunk-left') {
-                    attackAngle = 180;
-                    startAngle = -45;
-                    endAngle = 45;
-                } else if (player.anims.currentAnim.key === 'cyberpunk-right') {
-                    attackAngle = 0;
-                    startAngle = -45;
-                    endAngle = 45;
-                }
-            }
+                startAngle = -30;
+                endAngle = 30;
+                break;
         }
         
         // Create sword with offset based on direction
-        const swordOffset = 20; // Reduced offset
+        const swordOffset = 20;
         const offsetX = Math.cos(attackAngle * Math.PI / 180) * swordOffset;
         const offsetY = Math.sin(attackAngle * Math.PI / 180) * swordOffset;
         
-        const sword = scene.physics.add.sprite(player.x + offsetX, player.y + offsetY, 'sword').setScale(0.8); // Reduced scale
+        const sword = scene.physics.add.sprite(player.x + offsetX, player.y + offsetY, 'sword').setScale(0.7);
         sword.setDepth(1);
-        sword.setOrigin(0.5, 0.75); // Adjusted origin for better rotation
-        sword.angle = attackAngle + startAngle; // Set initial angle
+        sword.setOrigin(0.5, 0.75);
+        sword.angle = attackAngle + startAngle;
         
         // Create trail effect
         const createTrailEffect = (x, y, angle) => {
             const trail = scene.add.sprite(x, y, 'effect')
-                .setScale(0.2) // Smaller trail
+                .setScale(0.2)
                 .setAlpha(0.3)
                 .setTint(0x4488ff)
                 .setRotation(angle * Math.PI / 180);
@@ -410,7 +390,7 @@ class MyGame extends Phaser.Scene {
                 targets: trail,
                 alpha: 0,
                 scale: 0.1,
-                duration: 150, // Faster fade
+                duration: 150,
                 onComplete: () => trail.destroy()
             });
         };
@@ -418,7 +398,7 @@ class MyGame extends Phaser.Scene {
         // Create flash effects using sprites
         const createFlashEffect = (x, y, angle) => {
             const flash = scene.add.sprite(x, y, 'effect')
-                .setScale(0.3) // Smaller flash
+                .setScale(0.3)
                 .setAlpha(0.4)
                 .setTint(0xFFFFFF)
                 .setRotation(angle * Math.PI / 180);
@@ -426,16 +406,16 @@ class MyGame extends Phaser.Scene {
             scene.tweens.add({
                 targets: flash,
                 alpha: 0,
-                scale: 0.8, // Smaller scale growth
+                scale: 0.6,
                 duration: 150,
                 onComplete: () => flash.destroy()
             });
         };
         
         // Create initial flash effects
-        for (let i = 0; i < 2; i++) { // Reduced number of flashes
-            const flashAngle = attackAngle + (i - 0.5) * 30;
-            const flashDist = 15; // Reduced distance
+        for (let i = 0; i < 2; i++) {
+            const flashAngle = attackAngle + (i - 0.5) * 20;
+            const flashDist = 15;
             createFlashEffect(
                 sword.x + Math.cos(flashAngle * Math.PI / 180) * flashDist,
                 sword.y + Math.sin(flashAngle * Math.PI / 180) * flashDist,
@@ -447,19 +427,21 @@ class MyGame extends Phaser.Scene {
         let progress = 0;
         scene.tweens.add({
             targets: sword,
-            angle: { from: attackAngle + startAngle, to: attackAngle + endAngle }, // Maintain direction
-            scaleX: { from: 0.8, to: 0.9, yoyo: true }, // Reduced scale
-            scaleY: { from: 0.8, to: 0.85, yoyo: true }, // Reduced scale
-            duration: 200, // Faster swing
+            angle: { from: attackAngle + startAngle, to: attackAngle + endAngle },
+            scaleX: { from: 0.7, to: 0.8, yoyo: true },
+            scaleY: { from: 0.7, to: 0.75, yoyo: true },
+            duration: 200,
             ease: 'Power1',
             onUpdate: (tween) => {
-                // Update sword position to follow player
                 const swingProgress = tween.progress;
                 const currentAngle = attackAngle + (startAngle + (endAngle - startAngle) * swingProgress);
-                sword.x = player.x + Math.cos(currentAngle * Math.PI / 180) * swordOffset;
-                sword.y = player.y + Math.sin(currentAngle * Math.PI / 180) * swordOffset;
                 
-                // Create trail effect less frequently
+                // Calculate position to maintain consistent distance during swing
+                const currentOffset = swordOffset * (1 + swingProgress * 0.2); // Slight extension during swing
+                sword.x = player.x + Math.cos(currentAngle * Math.PI / 180) * currentOffset;
+                sword.y = player.y + Math.sin(currentAngle * Math.PI / 180) * currentOffset;
+                
+                // Create trail effect
                 if (swingProgress - progress > 0.2) {
                     progress = swingProgress;
                     createTrailEffect(sword.x, sword.y, sword.angle);
