@@ -326,83 +326,83 @@ class MyGame extends Phaser.Scene {
         // Determine attack direction based on last movement or facing direction
         let attackAngle = 0;
         let startAngle = -45;
-        let endAngle = 135;
+        let endAngle = 45;  // Reduced swing arc
         
         if (player === player1) {
             if (this.cursors.left.isDown) {
                 attackAngle = 180;
-                startAngle = 135;
-                endAngle = 315;
+                startAngle = -45;
+                endAngle = 45;
             } else if (this.cursors.right.isDown) {
                 attackAngle = 0;
                 startAngle = -45;
-                endAngle = 135;
+                endAngle = 45;
             } else if (this.cursors.up.isDown) {
                 attackAngle = -90;
-                startAngle = 45;
-                endAngle = 225;
+                startAngle = -45;
+                endAngle = 45;
             } else if (this.cursors.down.isDown) {
                 attackAngle = 90;
-                startAngle = 225;
-                endAngle = 405;
+                startAngle = -45;
+                endAngle = 45;
             } else if (player.anims.currentAnim) {
                 // Use the current animation to determine direction
                 if (player.anims.currentAnim.key === 'left') {
                     attackAngle = 180;
-                    startAngle = 135;
-                    endAngle = 315;
+                    startAngle = -45;
+                    endAngle = 45;
                 } else if (player.anims.currentAnim.key === 'right') {
                     attackAngle = 0;
                     startAngle = -45;
-                    endAngle = 135;
+                    endAngle = 45;
                 }
             }
         } else if (player === player2) {
             if (this.keys.a.isDown) {
                 attackAngle = 180;
-                startAngle = 135;
-                endAngle = 315;
+                startAngle = -45;
+                endAngle = 45;
             } else if (this.keys.d.isDown) {
                 attackAngle = 0;
                 startAngle = -45;
-                endAngle = 135;
+                endAngle = 45;
             } else if (this.keys.w.isDown) {
                 attackAngle = -90;
-                startAngle = 45;
-                endAngle = 225;
+                startAngle = -45;
+                endAngle = 45;
             } else if (this.keys.s.isDown) {
                 attackAngle = 90;
-                startAngle = 225;
-                endAngle = 405;
+                startAngle = -45;
+                endAngle = 45;
             } else if (player.anims.currentAnim) {
                 // Use the current animation to determine direction
                 if (player.anims.currentAnim.key === 'cyberpunk-left') {
                     attackAngle = 180;
-                    startAngle = 135;
-                    endAngle = 315;
+                    startAngle = -45;
+                    endAngle = 45;
                 } else if (player.anims.currentAnim.key === 'cyberpunk-right') {
                     attackAngle = 0;
                     startAngle = -45;
-                    endAngle = 135;
+                    endAngle = 45;
                 }
             }
         }
         
         // Create sword with offset based on direction
-        const swordOffset = 30;
+        const swordOffset = 20; // Reduced offset
         const offsetX = Math.cos(attackAngle * Math.PI / 180) * swordOffset;
         const offsetY = Math.sin(attackAngle * Math.PI / 180) * swordOffset;
         
-        const sword = scene.physics.add.sprite(player.x + offsetX, player.y + offsetY, 'sword').setScale(1);
+        const sword = scene.physics.add.sprite(player.x + offsetX, player.y + offsetY, 'sword').setScale(0.8); // Reduced scale
         sword.setDepth(1);
-        sword.setOrigin(0.5, 0.8); // Adjust origin for better rotation
-        sword.angle = attackAngle; // Set initial angle
+        sword.setOrigin(0.5, 0.75); // Adjusted origin for better rotation
+        sword.angle = attackAngle + startAngle; // Set initial angle
         
         // Create trail effect
         const createTrailEffect = (x, y, angle) => {
             const trail = scene.add.sprite(x, y, 'effect')
-                .setScale(0.3)
-                .setAlpha(0.4)
+                .setScale(0.2) // Smaller trail
+                .setAlpha(0.3)
                 .setTint(0x4488ff)
                 .setRotation(angle * Math.PI / 180);
             
@@ -410,7 +410,7 @@ class MyGame extends Phaser.Scene {
                 targets: trail,
                 alpha: 0,
                 scale: 0.1,
-                duration: 200,
+                duration: 150, // Faster fade
                 onComplete: () => trail.destroy()
             });
         };
@@ -418,24 +418,24 @@ class MyGame extends Phaser.Scene {
         // Create flash effects using sprites
         const createFlashEffect = (x, y, angle) => {
             const flash = scene.add.sprite(x, y, 'effect')
-                .setScale(0.5)
-                .setAlpha(0.6)
+                .setScale(0.3) // Smaller flash
+                .setAlpha(0.4)
                 .setTint(0xFFFFFF)
                 .setRotation(angle * Math.PI / 180);
             
             scene.tweens.add({
                 targets: flash,
                 alpha: 0,
-                scale: 1.5,
-                duration: 200,
+                scale: 0.8, // Smaller scale growth
+                duration: 150,
                 onComplete: () => flash.destroy()
             });
         };
         
         // Create initial flash effects
-        for (let i = 0; i < 3; i++) {
-            const flashAngle = attackAngle + (i - 1) * 30;
-            const flashDist = 20;
+        for (let i = 0; i < 2; i++) { // Reduced number of flashes
+            const flashAngle = attackAngle + (i - 0.5) * 30;
+            const flashDist = 15; // Reduced distance
             createFlashEffect(
                 sword.x + Math.cos(flashAngle * Math.PI / 180) * flashDist,
                 sword.y + Math.sin(flashAngle * Math.PI / 180) * flashDist,
@@ -447,104 +447,103 @@ class MyGame extends Phaser.Scene {
         let progress = 0;
         scene.tweens.add({
             targets: sword,
-            angle: { from: startAngle + attackAngle, to: endAngle + attackAngle },
-            scaleX: { from: 1, to: 1.5, yoyo: true },
-            scaleY: { from: 1, to: 1.2, yoyo: true },
-            duration: 300,
+            angle: { from: attackAngle + startAngle, to: attackAngle + endAngle }, // Maintain direction
+            scaleX: { from: 0.8, to: 0.9, yoyo: true }, // Reduced scale
+            scaleY: { from: 0.8, to: 0.85, yoyo: true }, // Reduced scale
+            duration: 200, // Faster swing
             ease: 'Power1',
             onUpdate: (tween) => {
                 // Update sword position to follow player
-                const currentAngle = (startAngle + (endAngle - startAngle) * tween.progress) * Math.PI / 180;
-                sword.x = player.x + Math.cos(currentAngle + attackAngle * Math.PI / 180) * swordOffset;
-                sword.y = player.y + Math.sin(currentAngle + attackAngle * Math.PI / 180) * swordOffset;
+                const swingProgress = tween.progress;
+                const currentAngle = attackAngle + (startAngle + (endAngle - startAngle) * swingProgress);
+                sword.x = player.x + Math.cos(currentAngle * Math.PI / 180) * swordOffset;
+                sword.y = player.y + Math.sin(currentAngle * Math.PI / 180) * swordOffset;
                 
-                // Create trail effect
-                if (tween.progress - progress > 0.1) {
-                    progress = tween.progress;
+                // Create trail effect less frequently
+                if (swingProgress - progress > 0.2) {
+                    progress = swingProgress;
                     createTrailEffect(sword.x, sword.y, sword.angle);
                 }
                 
                 // Check for enemy hits during the swing
                 enemies.getChildren().forEach(enemy => {
-                    if (Phaser.Math.Distance.Between(sword.x, sword.y, enemy.x, enemy.y) < 50) {
+                    if (Phaser.Math.Distance.Between(sword.x, sword.y, enemy.x, enemy.y) < 40) { // Reduced hit distance
                         if (!enemy.isHit) {
                             enemy.isHit = true;
                             enemy.health = (enemy.health || 40) - 20;
                             
                             // Enhanced hit effect
                             const hitAngle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
-                            for (let i = 0; i < 4; i++) {
+                            for (let i = 0; i < 3; i++) { // Reduced particles
                                 const flash = scene.add.sprite(
-                                    enemy.x + Math.cos(hitAngle) * (i * 5),
-                                    enemy.y + Math.sin(hitAngle) * (i * 5),
+                                    enemy.x + Math.cos(hitAngle) * (i * 4),
+                                    enemy.y + Math.sin(hitAngle) * (i * 4),
                                     'effect'
                                 )
-                                .setScale(0.3)
+                                .setScale(0.2)
                                 .setTint(0xff0000)
-                                .setAlpha(0.6 - i * 0.1)
+                                .setAlpha(0.5 - i * 0.1)
                                 .setRotation(hitAngle);
                                 
                                 scene.tweens.add({
                                     targets: flash,
                                     alpha: 0,
-                                    scale: 1,
-                                    duration: 200 + i * 50,
+                                    scale: 0.6,
+                                    duration: 150 + i * 30,
                                     onComplete: () => flash.destroy()
                                 });
                             }
 
-                            // Damage text with improved animation
-                            const damageText = scene.add.text(enemy.x, enemy.y - 20, '-20', {
-                                fontSize: '20px',
+                            // Damage text
+                            const damageText = scene.add.text(enemy.x, enemy.y - 15, '-20', {
+                                fontSize: '16px',
                                 fill: '#FF0000',
                                 stroke: '#000000',
-                                strokeThickness: 4
+                                strokeThickness: 3
                             }).setOrigin(0.5);
                             
                             scene.tweens.add({
                                 targets: damageText,
-                                y: damageText.y - 40,
+                                y: damageText.y - 30,
                                 alpha: 0,
-                                scale: 1.5,
-                                duration: 800,
+                                scale: 1.2,
+                                duration: 600,
                                 ease: 'Power2',
                                 onComplete: () => damageText.destroy()
                             });
 
                             // Enhanced knockback effect
-                            const knockbackAngle = Phaser.Math.Angle.Between(player.x, player.y, enemy.x, enemy.y);
-                            const knockbackForce = 250;
+                            const knockbackForce = 200; // Reduced force
                             enemy.setVelocity(
-                                Math.cos(knockbackAngle) * knockbackForce,
-                                Math.sin(knockbackAngle) * knockbackForce
+                                Math.cos(hitAngle) * knockbackForce,
+                                Math.sin(hitAngle) * knockbackForce
                             );
                             
                             // Check for enemy death
                             if (enemy.health <= 0) {
-                                // Enhanced death animation
                                 scene.tweens.add({
                                     targets: enemy,
                                     alpha: 0,
-                                    scale: 1.5,
-                                    rotation: knockbackAngle + Math.PI,
-                                    duration: 300,
+                                    scale: 1.2,
+                                    rotation: hitAngle + Math.PI,
+                                    duration: 200,
                                     onComplete: () => enemy.destroy()
                                 });
                                 
                                 // Add death particles
-                                for (let i = 0; i < 8; i++) {
-                                    const angle = (i / 8) * Math.PI * 2;
+                                for (let i = 0; i < 6; i++) { // Reduced particles
+                                    const angle = (i / 6) * Math.PI * 2;
                                     const particle = scene.add.sprite(enemy.x, enemy.y, 'effect')
-                                        .setScale(0.2)
+                                        .setScale(0.15)
                                         .setTint(0xff0000);
                                     
                                     scene.tweens.add({
                                         targets: particle,
-                                        x: enemy.x + Math.cos(angle) * 50,
-                                        y: enemy.y + Math.sin(angle) * 50,
+                                        x: enemy.x + Math.cos(angle) * 30,
+                                        y: enemy.y + Math.sin(angle) * 30,
                                         alpha: 0,
-                                        scale: 0.1,
-                                        duration: 500,
+                                        scale: 0.05,
+                                        duration: 400,
                                         ease: 'Power2',
                                         onComplete: () => particle.destroy()
                                     });
@@ -562,10 +561,10 @@ class MyGame extends Phaser.Scene {
             }
         });
 
-        // Add swing sound effect with error handling
+        // Add swing sound effect
         try {
             if (this.cache.audio.exists('swoosh')) {
-                const swoosh = scene.sound.add('swoosh', { volume: 0.5 });
+                const swoosh = scene.sound.add('swoosh', { volume: 0.4 });
                 swoosh.play();
             }
         } catch (error) {
@@ -731,10 +730,20 @@ function createAssets(scene, includeSmiley = true, includeMustacheSmiley = true)
     graphics.generateTexture('key', tileSize, tileSize);
 
     graphics.clear();
-    graphics.fillStyle(0xffffff, 1);
-    graphics.fillRect(tileSize / 2 - 8, 8, 16, tileSize / 2);
-    graphics.fillRect(tileSize / 2 - 24, tileSize / 2, 48, 16);
-    graphics.fillRect(tileSize / 2 - 8, tileSize / 2 + 16, 16, tileSize / 4);
+    // Create a more sword-like shape
+    graphics.lineStyle(0);
+    // Sword blade (silver)
+    graphics.fillStyle(0xcccccc, 1);
+    graphics.fillRect(tileSize/2 - 3, 4, 6, tileSize/2); // Thinner blade
+    // Sword guard (gold)
+    graphics.fillStyle(0xffd700, 1);
+    graphics.fillRect(tileSize/2 - 12, tileSize/2 - 2, 24, 4);
+    // Sword handle (brown)
+    graphics.fillStyle(0x8b4513, 1);
+    graphics.fillRect(tileSize/2 - 2, tileSize/2 + 2, 4, tileSize/6);
+    // Add blade highlight
+    graphics.fillStyle(0xffffff, 0.5);
+    graphics.fillRect(tileSize/2 - 1, 6, 2, tileSize/2 - 4);
     graphics.generateTexture('sword', tileSize, tileSize);
 
     graphics.clear();
