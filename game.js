@@ -32,7 +32,7 @@ class MyGame extends Phaser.Scene {
         // Load the enemy spritesheet
         this.load.spritesheet('enemy', 'assets/enemy.png', { frameWidth: 48, frameHeight: 48 });
         // Load sword swing sound effect (local file)
-        this.load.audio('swoosh', 'assets/swoosh.mp3');
+        this.load.audio('swoosh', 'assets/swoosh.wav');
         // Load effect sprite
         this.load.image('effect', 'assets/effect.png');
     }
