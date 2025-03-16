@@ -339,43 +339,43 @@ class MyGame extends Phaser.Scene {
         // Get the last direction for the player
         const lastDir = player === player1 ? this.lastDirection.player1 : this.lastDirection.player2;
         
-        // Set base attack angles
+        // Set base attack angles based on direction
         let attackAngle = 0;
-        let startAngle = -45;
-        let endAngle = 45;
+        let startAngle = 0;
+        let endAngle = 0;
         
         // Adjust attack angle based on last direction
         switch (lastDir) {
             case 'left':
                 attackAngle = 180;
-                startAngle = -30;
-                endAngle = 30;
+                startAngle = -45;  // Start from northeast when facing left
+                endAngle = 45;     // End at southeast
                 break;
             case 'right':
                 attackAngle = 0;
-                startAngle = -30;
-                endAngle = 30;
+                startAngle = 45;   // Start from northwest
+                endAngle = -45;    // End at southwest
                 break;
             case 'up':
                 attackAngle = -90;
-                startAngle = -30;
-                endAngle = 30;
+                startAngle = -45;  // Start from southeast
+                endAngle = 45;     // End at southwest
                 break;
             case 'down':
                 attackAngle = 90;
-                startAngle = -30;
-                endAngle = 30;
+                startAngle = 45;   // Start from northeast
+                endAngle = -45;    // End at northwest
                 break;
         }
         
         // Create sword with offset based on direction
-        const swordOffset = 20;
-        const offsetX = Math.cos(attackAngle * Math.PI / 180) * swordOffset;
-        const offsetY = Math.sin(attackAngle * Math.PI / 180) * swordOffset;
+        const swordOffset = 25;  // Slightly increased offset for better visibility
+        const offsetX = Math.cos((attackAngle + startAngle) * Math.PI / 180) * swordOffset;
+        const offsetY = Math.sin((attackAngle + startAngle) * Math.PI / 180) * swordOffset;
         
         const sword = scene.physics.add.sprite(player.x + offsetX, player.y + offsetY, 'sword').setScale(0.7);
         sword.setDepth(1);
-        sword.setOrigin(0.5, 0.75);
+        sword.setOrigin(0.5, 0.8);  // Adjusted origin for better rotation
         sword.angle = attackAngle + startAngle;
         
         // Create trail effect
@@ -412,13 +412,13 @@ class MyGame extends Phaser.Scene {
             });
         };
         
-        // Create initial flash effects
+        // Create initial flash effects aligned with swing direction
         for (let i = 0; i < 2; i++) {
-            const flashAngle = attackAngle + (i - 0.5) * 20;
-            const flashDist = 15;
+            const flashAngle = attackAngle + startAngle + (i * 30);
+            const flashDist = 20;
             createFlashEffect(
-                sword.x + Math.cos(flashAngle * Math.PI / 180) * flashDist,
-                sword.y + Math.sin(flashAngle * Math.PI / 180) * flashDist,
+                player.x + Math.cos(flashAngle * Math.PI / 180) * flashDist,
+                player.y + Math.sin(flashAngle * Math.PI / 180) * flashDist,
                 flashAngle
             );
         }
@@ -437,14 +437,14 @@ class MyGame extends Phaser.Scene {
                 const currentAngle = attackAngle + (startAngle + (endAngle - startAngle) * swingProgress);
                 
                 // Calculate position to maintain consistent distance during swing
-                const currentOffset = swordOffset * (1 + swingProgress * 0.2); // Slight extension during swing
+                const currentOffset = swordOffset * (1 + swingProgress * 0.2);
                 sword.x = player.x + Math.cos(currentAngle * Math.PI / 180) * currentOffset;
                 sword.y = player.y + Math.sin(currentAngle * Math.PI / 180) * currentOffset;
                 
-                // Create trail effect
-                if (swingProgress - progress > 0.2) {
+                // Create trail effect aligned with swing
+                if (swingProgress - progress > 0.15) {  // Increased frequency of trail effects
                     progress = swingProgress;
-                    createTrailEffect(sword.x, sword.y, sword.angle);
+                    createTrailEffect(sword.x, sword.y, currentAngle);
                 }
                 
                 // Check for enemy hits during the swing
